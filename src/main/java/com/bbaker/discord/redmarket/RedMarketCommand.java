@@ -1,5 +1,10 @@
 package com.bbaker.discord.redmarket;
 
+import java.util.List;
+
+import de.btobastian.javacord.DiscordApi;
+import de.btobastian.javacord.entities.message.Message;
+import de.btobastian.javacord.entities.message.emoji.CustomEmoji;
 import de.btobastian.sdcf4j.Command;
 import de.btobastian.sdcf4j.CommandExecutor;
 import de.btobastian.sdcf4j.CommandHandler;
@@ -12,41 +17,47 @@ public class RedMarketCommand implements CommandExecutor {
         this.commandHandler = commandHandler;
     }
 	
+	@Command(aliases = {"!test", "!t"})
+	public String onEmoji(DiscordApi api, Message message) {
+		System.out.println(message.getContent());
+		return "Hello world";
+	}
 	
 	@Command(aliases = {"!r", "!roll"}, description = "Roll 2d10, finds the difference, and applys any (optional) modifiers", usage = "!roll [+n|-n]")
-    public String onRoll(String[] arg) {
+    public String onRoll(DiscordApi api, Message message) {
+		String[] arg = message.getContent().split("\\s+");
 		long mod = 0;
-		if(arg.length > 0) {
+		if(arg.length >= 2) {
 			try {
-				mod = Long.valueOf(arg[0]);			
+				mod = Long.valueOf(arg[1]);			
 			} catch(NumberFormatException nfe) {
-				return String.format("'%s' is not a number", arg[0]);
+				return String.format("'%s' is not a integer", arg[1]);
 			}			
 		}
-			
-		
+					
 		int red = roll();
 		int black = roll();
 		
 		if(red == black) {
 			String crit = red % 2 == 0 ? "Pass" : "Fail";
-			return String.format("Black: %d Red: %d `Crit: %s`", black, red, crit);
+			return String.format("%s %s `Crit: %s`", getDiceFace("black",  black, api), getDiceFace("red", red, api), crit);
 		} else {			
 			long roll = black - red + mod;
-			return String.format("Black: %d Red: %d `Net: %d`", black, red, roll);		
+			return String.format("%s %s `Net: %d`", getDiceFace("black",  black, api), getDiceFace("red", red, api), roll);		
 		}
 		
 		
     }
 	
 	@Command(aliases = {"!d", "!dmg", "!damage"}, description = "Determins how much damange goes where", usage = "!dmg [+n|-n]")
-    public String onDamange(String[] arg) {
+    public String onDamange(DiscordApi api, Message message) {
+		String[] arg = message.getContent().split("\\s+");
 		long mod = 0;
-		if(arg.length > 0) {
+		if(arg.length >= 2) {
 			try {
-				mod = Long.valueOf(arg[0]);			
+				mod = Long.valueOf(arg[1]);			
 			} catch(NumberFormatException nfe) {
-				return String.format("'%s' is not a number", arg[0]);
+				return String.format("'%s' is not a integer", arg[1]);
 			}			
 		}
 			
@@ -55,14 +66,19 @@ public class RedMarketCommand implements CommandExecutor {
 		int black = roll();
 		long roll = black - red + mod;
 		boolean isCrit = red==black;
+		boolean isHit = roll > 0;
 		StringBuilder sb = new StringBuilder();
 		
 		if(isCrit) {
 			String crit = red % 2 == 0 ? "Success" : "Fail";
-			sb.append( String.format("Black: %d Red: %d `Crit %s`", black, red, crit) );
+			sb.append( String.format("%s %s `Crit %s`", getDiceFace("black",  black, api), getDiceFace("red", red, api), crit) );
 		} else {
-			String success = roll > 0 ? "Success" : "Fail";
-			sb.append( String.format("Black: %d Red: %d `%s`(%d)", black, red, success, roll) );
+			String success = isHit ? "Success" : "Fail";
+			sb.append( String.format("%s %s `%s`(%d)", getDiceFace("black",  black, api), getDiceFace("red", red, api), success, roll) );
+		}
+		
+		if(!isHit) {
+			return sb.toString();
 		}
 		
 		String location;
@@ -128,5 +144,16 @@ public class RedMarketCommand implements CommandExecutor {
 	
 	private int roll() {
 		return (int) (Math.random() * 10) + 1;
+	}
+	
+	private String getDiceFace(String color, int face, DiscordApi api) {
+		String name = String.format("%s_%02d", color, face);
+		List<CustomEmoji> emojies = api.getCustomEmojisByName(name);
+	
+		if(emojies.size() > 0) {
+			return emojies.get(0).getMentionTag();
+		} else {
+			return color + ": " + face;
+		}
 	}
 }
