@@ -11,9 +11,15 @@ import de.btobastian.sdcf4j.CommandHandler;
 
 public class RedMarketCommand implements CommandExecutor {	
 	
-	private final CommandHandler commandHandler;
-
-    public RedMarketCommand(CommandHandler commandHandler) {
+	private static final String[] dm = {
+		"Nope", "No", "Not Allowed", "Normally, yes. But not this time", "Normally yes. But not for you", "Haha, no", "Never",
+		"Maybe", "Sometimes", "Ask again?", "For 20 bucks, yes.",
+		"Sure", "Yes", "Uhhhhhh, yes", "Valid", "This time, yes", "Normally no. But for you, yes.", "I guess so", "Yep"		
+	};
+			
+	private final CommandHandler commandHandler;	
+    
+	public RedMarketCommand(CommandHandler commandHandler) {
         this.commandHandler = commandHandler;
     }
 	
@@ -21,6 +27,12 @@ public class RedMarketCommand implements CommandExecutor {
 	public String onEmoji(DiscordApi api, Message message) {
 		System.out.println(message.getContent());
 		return "Hello world";
+	}
+	
+	@Command(aliases = {"!gm"})
+	public String onGmSays(String[] args) {		
+		int index = (int)Math.rint(Math.random() * dm.length);
+		return dm[index];
 	}
 	
 	@Command(aliases = {"!r", "!roll"}, description = "Roll 2d10, finds the difference, and applys any (optional) modifiers", usage = "!roll [+n|-n]")
