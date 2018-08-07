@@ -48,12 +48,12 @@ public class RedMarketCommand implements CommandExecutor {
 		return String.format("%s `%s%s` Net: %d", table.getResults(api), crit, success, table.getNet());
 	}
 	
-	@Command(aliases = {"!a", "!attack"}, description = "Determins hit/miss & damage. (Success == damage)", usage = "!attack [+n|-n]")
+	@Command(aliases = {"!a", "!attack"}, description = "Determines hit/miss & damage. (Success == damage)", usage = "!attack [+n|-n]")
 	public String onAttack(DiscordApi api, Message message) {
 		return checkedDamage(api, message, true);
 	}
 	
-	@Command(aliases = {"!d", "!defend"}, description = "Determins hit/miss & damage. (Failure == damage)", usage = "!defend [+n|-n]")
+	@Command(aliases = {"!d", "!defend"}, description = "Determines hit/miss & damage. (Failure == damage)", usage = "!defend [+n|-n]")
 	public String onDefend(DiscordApi api, Message message) {
 		return checkedDamage(api, message, false);
 	}
