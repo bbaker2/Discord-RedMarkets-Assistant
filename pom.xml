@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>bbaker.discord.redmarket</groupId>
 	<artifactId>drma</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 
 	<properties>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>9</maven.compiler.source>
+		<maven.compiler.target>9</maven.compiler.target>
 	</properties>
 
 	<repositories>
@@ -23,12 +23,12 @@
 
 	<dependencies>
 		<dependency>
-            <groupId>de.btobastian</groupId>
-            <artifactId>Javacord</artifactId>
-            <version>8ded4aa</version>
-            <scope>provided</scope>
-        </dependency>
-        
+		    <groupId>org.javacord</groupId>
+		    <artifactId>javacord</artifactId>
+		    <version>3.0.0</version>
+		    <type>pom</type>
+		</dependency>
+
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
@@ -38,13 +38,13 @@
 		<dependency>
 			<groupId>de.btobastian.sdcf4j</groupId>
 			<artifactId>sdcf4j-core</artifactId>
-			<version>v1.0.9</version>
+			<version>v1.0.10</version>
 		</dependency>
 
 		<dependency>
 			<groupId>de.btobastian.sdcf4j</groupId>
 			<artifactId>sdcf4j-javacord</artifactId>
-			<version>v1.0.9</version>
+			<version>v1.0.10</version>
 		</dependency>
 	</dependencies>
 </project>

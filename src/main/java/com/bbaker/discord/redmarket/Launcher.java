@@ -1,8 +1,12 @@
 package com.bbaker.discord.redmarket;
 
-import de.btobastian.javacord.AccountType;
-import de.btobastian.javacord.DiscordApi;
-import de.btobastian.javacord.DiscordApiBuilder;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
+
+import org.javacord.api.AccountType;
+import org.javacord.api.DiscordApi;
+import org.javacord.api.DiscordApiBuilder;
+
 import de.btobastian.sdcf4j.CommandHandler;
 import de.btobastian.sdcf4j.handler.JavacordHandler;
 
@@ -16,8 +20,15 @@ public class Launcher {
 		
 		String token = args[0];
 		DiscordApiBuilder dab = new DiscordApiBuilder().setAccountType(AccountType.BOT).setToken(token);
-		DiscordApi api = dab.login().join();
-		CommandHandler ch = new JavacordHandler(api);
+		DiscordApi api = null;
+		try {
+			api = dab.login().join();
+		} catch (CancellationException | CompletionException e) {
+			System.out.println("Ran into issues while connecting to discord");
+			System.out.println(e.getMessage());
+			System.exit(1);
+		}
+		CommandHandler ch = new JavacordHandler(api);			
 		ch.registerCommand(new RedMarketCommand(ch));
 	}
 

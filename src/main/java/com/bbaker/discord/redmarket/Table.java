@@ -1,9 +1,8 @@
 package com.bbaker.discord.redmarket;
 
-import java.util.List;
-
-import de.btobastian.javacord.DiscordApi;
-import de.btobastian.javacord.entities.message.emoji.CustomEmoji;
+import java.util.Collection;
+import org.javacord.api.DiscordApi;
+import org.javacord.api.entity.emoji.KnownCustomEmoji;
 
 public class Table {
 	
@@ -55,10 +54,10 @@ public class Table {
 	
 	private String getDiceFace(String color, int face, DiscordApi api) {
 		String name = String.format("%s_%02d", color, face);
-		List<CustomEmoji> emojies = api.getCustomEmojisByName(name);
+		Collection<KnownCustomEmoji> emojies = api.getCustomEmojisByName(name);
 	
 		if(emojies.size() > 0) {
-			return emojies.get(0).getMentionTag();
+			return emojies.iterator().next().getMentionTag();
 		} else {
 			return color + ": " + face;
 		}

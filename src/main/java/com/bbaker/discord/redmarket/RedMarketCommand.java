@@ -1,12 +1,13 @@
 package com.bbaker.discord.redmarket;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import de.btobastian.javacord.DiscordApi;
-import de.btobastian.javacord.entities.message.Message;
-import de.btobastian.javacord.entities.message.emoji.CustomEmoji;
+import org.javacord.api.DiscordApi;
+import org.javacord.api.entity.emoji.KnownCustomEmoji;
+import org.javacord.api.entity.message.Message;
+
 import de.btobastian.sdcf4j.Command;
 import de.btobastian.sdcf4j.CommandExecutor;
 import de.btobastian.sdcf4j.CommandHandler;
@@ -150,10 +151,10 @@ public class RedMarketCommand implements CommandExecutor {
 	
 	private String getDiceFace(String color, int face, DiscordApi api) {
 		String name = String.format("%s_%02d", color, face);
-		List<CustomEmoji> emojies = api.getCustomEmojisByName(name);
+		Collection<KnownCustomEmoji> emojies = api.getCustomEmojisByName(name);
 	
 		if(emojies.size() > 0) {
-			return emojies.get(0).getMentionTag();
+			return emojies.iterator().next().getMentionTag();
 		} else {
 			return color + ": " + face;
 		}
