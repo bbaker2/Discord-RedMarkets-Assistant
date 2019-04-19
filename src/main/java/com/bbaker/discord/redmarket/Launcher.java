@@ -13,9 +13,9 @@ import de.btobastian.sdcf4j.handler.JavacordHandler;
 public class Launcher {
 
     public static void main(String[] args) {
-        String token;
+        String token = null;
         if(args.length < 1) {
-          	System.out.println("Missing token. Exiting");
+            System.out.println("Missing token. Exiting");
             System.exit(1);
         } else {
             token = args[0];
