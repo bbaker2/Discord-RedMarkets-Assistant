@@ -52,9 +52,9 @@
 
   <dependencies>
     <dependency>
-        <groupId>bbaker.util.arguments</groupId>
-        <artifactId>arg-eval</artifactId>
-        <version>0.0.1</version>
+        <groupId>com.github.bbaker2</groupId>
+        <artifactId>args-eval</artifactId>
+        <version>1.0.0</version>
       </dependency>
 
     <dependency>
