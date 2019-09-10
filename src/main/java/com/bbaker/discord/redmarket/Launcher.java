@@ -22,17 +22,21 @@ public class Launcher {
         }
 
         DiscordApiBuilder dab = new DiscordApiBuilder().setAccountType(AccountType.BOT).setToken(token);
-        DiscordApi api = null;
+        
         try {
-            api = dab.login().join();
+        	DiscordApi api = dab.login().join();
+            api.setMessageCacheSize(1, 60);
+            CommandHandler ch = new JavacordHandler(api);
+            ch.registerCommand(new RedMarketCommand(ch));
+            ch.registerCommand(new NegotiationCommand(api));
         } catch (CancellationException | CompletionException e) {
             System.out.println("Ran into issues while connecting to discord");
             System.out.println(e.getMessage());
             System.exit(1);
-        }
-        CommandHandler ch = new JavacordHandler(api);
-        ch.registerCommand(new RedMarketCommand(ch));
-        ch.registerCommand(new NegotiationCommand(api));
+        } catch (Exception e) {
+        	e.printStackTrace();
+        	System.exit(1);
+        }        
     }
 
 }
