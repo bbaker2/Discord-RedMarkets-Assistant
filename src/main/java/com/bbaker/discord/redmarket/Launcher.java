@@ -29,6 +29,7 @@ public class Launcher {
             CommandHandler ch = new JavacordHandler(api);
             ch.registerCommand(new RedMarketCommand(ch));
             ch.registerCommand(new NegotiationCommand(api));
+            ch.registerCommand(new RoleCommand());
         } catch (CancellationException | CompletionException e) {
             System.out.println("Ran into issues while connecting to discord");
             System.out.println(e.getMessage());
