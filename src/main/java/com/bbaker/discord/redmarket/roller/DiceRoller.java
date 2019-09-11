@@ -1,8 +1,10 @@
-package com.bbaker.discord.redmarket;
+package com.bbaker.discord.redmarket.roller;
 
 import java.util.OptionalInt;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.bbaker.discord.redmarket.exceptions.BadFormatException;
 
 public class DiceRoller {
 

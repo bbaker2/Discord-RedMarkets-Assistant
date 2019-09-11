@@ -1,4 +1,4 @@
-package com.bbaker.discord.redmarket;
+package com.bbaker.discord.redmarket.commands;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;

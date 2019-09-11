@@ -1,4 +1,4 @@
-package com.bbaker.discord.redmarket;
+package com.bbaker.discord.redmarket.commands;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +12,11 @@ import org.javacord.api.entity.message.Message;
 
 import com.bbaker.arg.parser.exception.BadArgumentException;
 import com.bbaker.arg.parser.text.TextArgumentParser;
+import com.bbaker.discord.redmarket.SwayProcessor;
+import com.bbaker.discord.redmarket.Tracker;
+import com.bbaker.discord.redmarket.exceptions.BadFormatException;
+import com.bbaker.discord.redmarket.roller.DiceRoller;
+import com.bbaker.discord.redmarket.roller.Table;
 
 import de.btobastian.sdcf4j.Command;
 import de.btobastian.sdcf4j.CommandExecutor;

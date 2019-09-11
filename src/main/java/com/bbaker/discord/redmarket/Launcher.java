@@ -7,6 +7,10 @@ import org.javacord.api.AccountType;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 
+import com.bbaker.discord.redmarket.commands.NegotiationCommand;
+import com.bbaker.discord.redmarket.commands.RedMarketCommand;
+import com.bbaker.discord.redmarket.commands.RoleCommand;
+
 import de.btobastian.sdcf4j.CommandHandler;
 import de.btobastian.sdcf4j.handler.JavacordHandler;
 

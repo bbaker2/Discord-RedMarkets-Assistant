@@ -1,8 +1,11 @@
-package com.bbaker.discord.redmarket;
+package com.bbaker.discord.redmarket.roller;
 
 import java.util.Collection;
+
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.emoji.KnownCustomEmoji;
+
+import com.bbaker.discord.redmarket.exceptions.BadFormatException;
 
 public class Table {
 
