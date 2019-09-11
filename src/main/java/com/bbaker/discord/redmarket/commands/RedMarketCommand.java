@@ -16,12 +16,7 @@ import de.btobastian.sdcf4j.CommandHandler;
 public class RedMarketCommand implements CommandExecutor {
     private static final String CRIT = "Crit";
     private static final String SUCCESS = "Success";
-    private static final String FAIL = "Fail";
-    private static final String[] DM = {
-        "Nope", "No", "Not Allowed", "Normally, yes. But not this time", "Normally yes. But not for you", "Haha, no", "Never",
-        "Maybe", "Sometimes", "Ask again?", "For 20 bucks, yes.",
-        "Sure", "Yes", "Uhhhhhh, yes", "Valid", "This time, yes", "Normally no. But for you, yes.", "I guess so", "Yep"
-    };
+    private static final String FAIL = "Fail";    
 
     private final Pattern diceFaceRgx;
     private final Pattern modRgx;
@@ -78,12 +73,6 @@ public class RedMarketCommand implements CommandExecutor {
         sb.append("\n");
         sb.append( generateDamage(table.getBlack(), table.getRed(), table.isCrit()) );
         return sb.toString();
-    }
-
-    @Command(aliases = {"!gm"}, description = "Returns a yes, no, or maybe at random")
-    public String onGmSays(String[] args) {
-        int index = (int)Math.rint(Math.random() * DM.length);
-        return DM[index];
     }
 
     @Command(aliases = {"!test", "!t"}, description = "Shhh, ignore this.")
