@@ -1,5 +1,8 @@
 package com.bbaker.discord.redmarket;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 
@@ -17,18 +20,28 @@ import de.btobastian.sdcf4j.handler.JavacordHandler;
 public class Launcher {
 
     public static void main(String[] args) {
-        String token = null;
+        Properties props = new Properties();;
         if(args.length < 1) {
-            System.out.println("Missing token. Exiting");
+            System.out.println("Properties file missing. Exiting");
             System.exit(1);
         } else {
-            token = args[0];
+            try {
+                props.load(new FileInputStream(args[0]));
+            } catch (IOException e) {
+                System.out.println("Unable to read properties file. Exiting");
+                System.exit(1);
+            }
         }
 
-        DiscordApiBuilder dab = new DiscordApiBuilder().setAccountType(AccountType.BOT).setToken(token);
-        
+        if(!props.containsKey("auth.token")) {
+            System.out.println("Auth token missing. Please populate auth.token in the properties file");
+            System.exit(1);
+        }
+
+        DiscordApiBuilder dab = new DiscordApiBuilder().setAccountType(AccountType.BOT).setToken(props.getProperty("auth.token"));
+
         try {
-        	DiscordApi api = dab.login().join();
+            DiscordApi api = dab.login().join();
             api.setMessageCacheSize(1, 60);
             CommandHandler ch = new JavacordHandler(api);
             ch.registerCommand(new RedMarketCommand(ch));
@@ -39,9 +52,9 @@ public class Launcher {
             System.out.println(e.getMessage());
             System.exit(1);
         } catch (Exception e) {
-        	e.printStackTrace();
-        	System.exit(1);
-        }        
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
 }
