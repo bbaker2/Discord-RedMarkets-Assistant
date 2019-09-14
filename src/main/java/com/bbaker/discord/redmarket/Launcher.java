@@ -10,6 +10,7 @@ import org.javacord.api.AccountType;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 
+import com.bbaker.discord.redmarket.commands.ChannelCommand;
 import com.bbaker.discord.redmarket.commands.NegotiationCommand;
 import com.bbaker.discord.redmarket.commands.RedMarketCommand;
 import com.bbaker.discord.redmarket.commands.RoleCommand;
@@ -47,6 +48,7 @@ public class Launcher {
             ch.registerCommand(new RedMarketCommand(ch));
             ch.registerCommand(new NegotiationCommand(api));
             ch.registerCommand(new RoleCommand(api));
+            ch.registerCommand(new ChannelCommand(api, props.getProperty("config.category")));
         } catch (CancellationException | CompletionException e) {
             System.out.println("Ran into issues while connecting to discord");
             System.out.println(e.getMessage());
