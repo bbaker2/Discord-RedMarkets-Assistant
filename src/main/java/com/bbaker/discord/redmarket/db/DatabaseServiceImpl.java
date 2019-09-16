@@ -4,6 +4,8 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 import org.h2.util.StringUtils;
+import org.jdbi.v3.core.HandleCallback;
+import org.jdbi.v3.core.HandleConsumer;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.h2.H2DatabasePlugin;
 
@@ -88,5 +90,15 @@ public class DatabaseServiceImpl implements DatabaseService  {
             return String.format(template, qualifiedName(tableName));
         }
     }
+
+	@Override
+	public <X extends Exception> void useHandle(final HandleConsumer<X> callback) throws X {
+		this.jdbi.useHandle(callback);
+	}
+
+	@Override
+	public <R, X extends Exception> R withHandle(HandleCallback<R, X> callback) throws X {
+		return this.jdbi.withHandle(callback);
+	}
 
 }

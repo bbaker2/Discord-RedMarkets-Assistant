@@ -1,7 +1,5 @@
 package com.bbaker.discord.redmarket.commands.channel;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -16,19 +14,23 @@ import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 
+import com.bbaker.discord.redmarket.commands.StandardCommand;
+import com.bbaker.discord.redmarket.db.DatabaseService;
+
 import de.btobastian.sdcf4j.Command;
 import de.btobastian.sdcf4j.CommandExecutor;
 
-public class ChannelCommand implements CommandExecutor {
+public class ChannelCommand implements CommandExecutor, StandardCommand {
 
     private DiscordApi api = null;
     private Optional<ChannelCategory> category = null;
     private Permissions playerPerms = null;
     private Pattern VALID_NAME = Pattern.compile("[\\w|\\-]+");
-     
-    
-    public ChannelCommand(DiscordApi api, String category) {
+    private ChannelStorage database;
+
+    public ChannelCommand(DiscordApi api, String category, DatabaseService dbService) {
         this.api = api;
+        this.database = new ChannelStorageImpl(dbService);
         this.category = api.getChannelCategoriesByNameIgnoreCase(category)
         		.stream().findFirst();
         playerPerms = new PermissionsBuilder()
@@ -45,7 +47,18 @@ public class ChannelCommand implements CommandExecutor {
         				PermissionType.MENTION_EVERYONE
 				)
         		.build();
+        startup();
     }
+
+    public void startup() {
+    	database.createTables();
+    }
+
+    @Override
+    public void shutdown() {
+    	// Nothing for shutdowns
+    }
+
 
     @Command(aliases = {"!channel", "!c"}, description = "", usage = "!lft")
     public String onChannel(Message message) {
@@ -55,23 +68,22 @@ public class ChannelCommand implements CommandExecutor {
     	if(!isGm) {
     		return "Only GMs can create channels & add users for games. Try `!gm` to give yourself the GM role";
     	}
-    	
-    	
-    	
-         
-        List<String> args = new ArrayList<String>();
-        Collections.addAll(args, message.getContent().split("\\s+"));
-        args.remove(0); // pop the first argument, since it will always be !c
-        
+
+
+
+
+        List<String> args = getArgs(message);
+        pop(args); // pop the first argument, since it will always be !c
+
         if(args.size() == 0) {
             return "Missing action. Supported actions: `create`";
         }
-        
+
         String action = args.remove(0);
-        
+
         switch (action.toLowerCase()) {
         	case "create":
-        		return createChannel(args, creator, server);        	
+        		return createChannel(args, creator, server);
         	default:
         		return String.format("Unknown action `%s`. Supported actions: `create`", action);
         }
@@ -87,16 +99,16 @@ public class ChannelCommand implements CommandExecutor {
         if(!VALID_NAME.matcher(channel).matches()) {
         	return "Channel name can only contain alpha-numeric, underscores, and dashes";
         }
-        
-        Role everyone = server.getEveryoneRole();        
+
+        Role everyone = server.getEveryoneRole();
         category.ifPresent(c -> {
             server.createTextChannelBuilder()
             	.setName(channel)
-            	.setCategory(c)            	
+            	.setCategory(c)
             	.addPermissionOverwrite(everyone, c.getOverwrittenPermissions(everyone))
-            	.addPermissionOverwrite(creator, playerPerms)            	
+            	.addPermissionOverwrite(creator, playerPerms)
                 .create();
-            
+
             server.createVoiceChannelBuilder()
             	.setName(channel)
             	.setCategory(c)
@@ -104,7 +116,7 @@ public class ChannelCommand implements CommandExecutor {
             	.addPermissionOverwrite(creator, playerPerms)
             	.create();
         });
-        
+
         return String.format("Channel `%s` created.", channel);
 	}
 

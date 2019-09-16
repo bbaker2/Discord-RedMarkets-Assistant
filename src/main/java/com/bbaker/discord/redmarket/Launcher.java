@@ -14,6 +14,9 @@ import com.bbaker.discord.redmarket.commands.channel.ChannelCommand;
 import com.bbaker.discord.redmarket.commands.negotiation.NegotiationCommand;
 import com.bbaker.discord.redmarket.commands.role.RoleCommand;
 import com.bbaker.discord.redmarket.commands.roll.RedMarketCommand;
+import com.bbaker.discord.redmarket.db.DatabaseService;
+import com.bbaker.discord.redmarket.db.DatabaseServiceImpl;
+import com.bbaker.discord.redmarket.exceptions.SetupException;
 
 import de.btobastian.sdcf4j.CommandHandler;
 import de.btobastian.sdcf4j.handler.JavacordHandler;
@@ -40,19 +43,22 @@ public class Launcher {
         }
 
         DiscordApiBuilder dab = new DiscordApiBuilder().setAccountType(AccountType.BOT).setToken(props.getProperty("auth.token"));
-
         try {
+        	DatabaseService dbService = new DatabaseServiceImpl(props);
             DiscordApi api = dab.login().join();
             api.setMessageCacheSize(1, 60);
             CommandHandler ch = new JavacordHandler(api);
             ch.registerCommand(new RedMarketCommand(ch));
             ch.registerCommand(new NegotiationCommand(api));
             ch.registerCommand(new RoleCommand(api));
-            ch.registerCommand(new ChannelCommand(api, props.getProperty("config.category")));
+            ch.registerCommand(new ChannelCommand(api, props.getProperty("config.category"), dbService));
         } catch (CancellationException | CompletionException e) {
             System.out.println("Ran into issues while connecting to discord");
             System.out.println(e.getMessage());
             System.exit(1);
+        } catch (SetupException e) {
+        	System.out.println("Ran into an issue while starting up the database");
+        	System.out.println(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
