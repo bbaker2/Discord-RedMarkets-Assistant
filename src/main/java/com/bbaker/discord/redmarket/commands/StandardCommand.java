@@ -24,7 +24,7 @@ public interface StandardCommand {
 	default List<String> getArgs(Message message){
         String args = message.getContent();
         String[] argsArray = args.split("\\s+");
-        List<String> argsList = new ArrayList<String>(Arrays.asList(argsArray));
+        List<String> argsList = new ArrayList(Arrays.asList(argsArray));
         argsList.remove(0);
         return argsList;
     }

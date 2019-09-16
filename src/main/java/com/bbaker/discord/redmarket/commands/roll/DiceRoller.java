@@ -1,4 +1,4 @@
-package com.bbaker.discord.redmarket.roller;
+package com.bbaker.discord.redmarket.commands.roll;
 
 import java.util.OptionalInt;
 import java.util.regex.Matcher;

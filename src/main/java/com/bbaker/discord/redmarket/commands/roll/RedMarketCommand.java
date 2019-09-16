@@ -1,4 +1,4 @@
-package com.bbaker.discord.redmarket.commands;
+package com.bbaker.discord.redmarket.commands.roll;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -7,7 +7,6 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;
 
 import com.bbaker.discord.redmarket.exceptions.BadFormatException;
-import com.bbaker.discord.redmarket.roller.Table;
 
 import de.btobastian.sdcf4j.Command;
 import de.btobastian.sdcf4j.CommandExecutor;

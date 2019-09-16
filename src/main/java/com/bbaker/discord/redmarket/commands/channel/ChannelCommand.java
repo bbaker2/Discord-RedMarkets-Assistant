@@ -1,4 +1,4 @@
-package com.bbaker.discord.redmarket.commands;
+package com.bbaker.discord.redmarket.commands.channel;
 
 import java.util.ArrayList;
 import java.util.Collections;

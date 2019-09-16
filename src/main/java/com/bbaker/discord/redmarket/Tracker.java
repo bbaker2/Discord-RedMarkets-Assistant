@@ -1,6 +1,6 @@
 package com.bbaker.discord.redmarket;
 
-import com.bbaker.discord.redmarket.roller.Table;
+import com.bbaker.discord.redmarket.commands.roll.Table;
 
 public class Tracker {
     private int provider, client, rounds, current;
