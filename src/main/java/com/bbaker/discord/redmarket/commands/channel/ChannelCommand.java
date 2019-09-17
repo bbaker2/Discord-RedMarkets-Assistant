@@ -28,7 +28,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
 
     public static final String MSG_CHANNEL_CREATED = "Channel `%s` created.";
 
-	private DiscordApi api = null;
+    private DiscordApi api = null;
     private Permissions playerPerms = null;
     private String category = null;
     private Pattern VALID_NAME = Pattern.compile("[\\w|\\-]+");
@@ -39,40 +39,39 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
         this.category = category;
         this.database = new ChannelStorageImpl(dbService);
         playerPerms = new PermissionsBuilder()
-        		.setAllowed(
-        				PermissionType.READ_MESSAGE_HISTORY,
-        				PermissionType.READ_MESSAGES,
-        				PermissionType.ADD_REACTIONS,
-        				PermissionType.ATTACH_FILE,
-        				PermissionType.SEND_MESSAGES,
-        				PermissionType.SEND_TTS_MESSAGES,
-        				PermissionType.USE_EXTERNAL_EMOJIS,
-        				PermissionType.SPEAK,
-        				PermissionType.EMBED_LINKS,
-        				PermissionType.MENTION_EVERYONE
-				)
-        		.build();
-        startup();
+                .setAllowed(
+                        PermissionType.READ_MESSAGE_HISTORY,
+                        PermissionType.READ_MESSAGES,
+                        PermissionType.ADD_REACTIONS,
+                        PermissionType.ATTACH_FILE,
+                        PermissionType.SEND_MESSAGES,
+                        PermissionType.SEND_TTS_MESSAGES,
+                        PermissionType.USE_EXTERNAL_EMOJIS,
+                        PermissionType.SPEAK,
+                        PermissionType.EMBED_LINKS,
+                        PermissionType.MENTION_EVERYONE
+                )
+                .build();
     }
 
     public void startup() {
-    	database.createTables();
+        database.createTables();
     }
 
     @Override
     public void shutdown() {
-    	// Nothing for shutdowns
+        // Nothing for shutdowns
     }
 
 
     @Command(aliases = {"!channel", "!c"}, description = "", usage = "!lft")
     public String onChannel(Message message) {
-    	Server server = message.getServer().get();
-    	User creator = message.getUserAuthor().get();
-    	boolean isGm = creator.getRoles(server).stream().anyMatch(r -> r.getName().toLowerCase().equals("gm"));
-    	if(!isGm) {
-    		return "Only GMs can create channels & add users for games. Try `!gm` to give yourself the GM role";
-    	}
+        Server server = message.getServer().get();
+        User creator = message.getUserAuthor().get();
+        boolean isGm = creator.getRoles(server).stream().anyMatch(r -> r.getName().toLowerCase().equals("gm"));
+        if(!isGm) {
+            return "Only GMs can create channels & add users for games. Try `!gm` to give yourself the GM role";
+        }
 
         List<String> args = getArgs(message);
 
@@ -84,110 +83,116 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
         String action = args.remove(0);
 
         switch (action.toLowerCase()) {
-        	case "create":
-        		return createChannel(args, creator, server);
-        	case "remove":
-        		return removeChannel(args, creator, message.getMentionedChannels(), server);
-        	case "add":
-        		return addUser(args, creator, server);
-        	default:
-        		return String.format("Unknown action `%s`. Supported actions: `create`", action);
+            case "create":
+                return createChannel(args, creator, server);
+            case "remove":
+                return removeChannel(args, creator, message.getMentionedChannels(), server);
+            case "add":
+                return addUser(args, creator, server);
+            default:
+                return String.format("Unknown action `%s`. Supported actions: `create`", action);
         }
     }
 
     private String addUser(List<String> args, User creator, Server server) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	private String removeChannel(List<String> args, User owner, List<ServerTextChannel> mentioned, Server server) {
-		if(args.isEmpty()) {
+    private String removeChannel(List<String> args, User owner, List<ServerTextChannel> mentioned, Server server) {
+        if(args.isEmpty()) {
             return "Missing channel name. Try `!channel remove <chanel_name>`";
         }
 
-		String channel = pop(args);
-		System.out.println(channel);
+        String channel = pop(args);
+        System.out.println(channel);
 
-		ChannelCategory category = getCategory().get();
+        ChannelCategory category = getCategory().get();
 
-		// If someone used a #mentioned tag, attempt to convert it into this string name instead
-		for(ServerTextChannel stc : mentioned) {
-			if(stc.getMentionTag().contentEquals(channel)) {
-				channel = stc.getName();
-				break;
-			}
-		}
+        // If someone used a #mentioned tag, attempt to convert it into this string name instead
+        for(ServerTextChannel stc : mentioned) {
+            if(stc.getMentionTag().contentEquals(channel)) {
+                channel = stc.getName();
+                break;
+            }
+        }
 
+        // Only search in the list of channels that are in the approved category
         List<ServerChannel> channelList = category.getChannels();
+
+        // Loop over all the channels and see if:
+        // 1.) The channels has an owner
+        // 2.) If the owner is the one trying to delete it
+        // Otherwise, record an error
         List<String> responses = new ArrayList<String>();
         for(ServerChannel sc : channelList) {
-        	if(sc.getName().equalsIgnoreCase(channel)) {
-        		Optional<Long> realOwner = database.getOwner(sc.getId());
-        		if(realOwner.isPresent()) {
-        			if(realOwner.get() != owner.getId()) {
-        				responses.add(String.format("%s: You are not the owner of `%s`. No changes made", owner.getNicknameMentionTag(), channel));
-        			} else {
-        				database.unregisterChannel(sc.getId());
-        				responses.add(String.format("`%s` deleted", channel));
-        				sc.delete();
-        			}
-        		} else {
-        			responses.add(String.format("Unable to determine the ownerd of `%s`. No changes made", channel));
-        		}
-        	}
+            if(sc.getName().equalsIgnoreCase(channel)) {
+                Optional<Long> realOwner = database.getOwner(sc.getId());
+                if(realOwner.isPresent()) {
+                    if(realOwner.get() != owner.getId()) {
+                        responses.add(String.format("%s: You are not the owner of `%s`. No changes made", owner.getNicknameMentionTag(), channel));
+                    } else {
+                        database.unregisterChannel(sc.getId()); // remove the owner from the database
+                        responses.add(String.format("`%s` deleted", channel));
+                        sc.delete(); // actually delete the channel
+                    }
+                } else {
+                    responses.add(String.format("Unable to determine the ownerd of `%s`. No changes made", channel));
+                }
+            }
         }
 
         if(responses.isEmpty()) {
-        	return String.format("No channels with the name `%s` was found", channel);
+            return String.format("No channels with the name `%s` was found", channel);
         } else {
-        	return String.join("\n", responses);
+            return String.join("\n", responses);
         }
-	}
-
-	private Optional<ChannelCategory> getCategory(){
-    	return api.getChannelCategoriesByNameIgnoreCase(category)
-        		.stream().findFirst();
     }
 
-	private String createChannel(List<String> args, User creator, Server server) {
-		if(args.isEmpty()) {
+    private Optional<ChannelCategory> getCategory(){
+        return api.getChannelCategoriesByNameIgnoreCase(category)
+                .stream().findFirst();
+    }
+
+    private String createChannel(List<String> args, User creator, Server server) {
+        if(args.isEmpty()) {
             return "Missing channel name. Try `!channel create <chanel_name>`";
         }
 
         String channel = pop(args);
 
         if(!VALID_NAME.matcher(channel).matches()) {
-        	return "Channel name can only contain alpha-numeric, underscores, and dashes";
+            return "Channel name can only contain alpha-numeric, underscores, and dashes";
         }
 
         ChannelCategory category = getCategory().get();
 
         boolean preExisting = category.getChannels().stream().anyMatch(sc -> sc.getName().equalsIgnoreCase(channel));
         if(preExisting) {
-        	return String.format("Channels for `%s` already exists. No changes made.", channel);
+            return String.format("Channels for `%s` already exists. No changes made.", channel);
         }
 
         getCategory().ifPresent(c -> {
-        	Role everyone = server.getEveryoneRole();
-        	Permissions defaultPermissions = c.getOverwrittenPermissions(everyone);
+            Role everyone = server.getEveryoneRole();
+            Permissions defaultPermissions = c.getOverwrittenPermissions(everyone);
             server.createTextChannelBuilder()
-            	.setName(channel)
-            	.setCategory(c)
-            	.addPermissionOverwrite(everyone, defaultPermissions)
-            	.addPermissionOverwrite(creator, playerPerms)
+                .setName(channel)
+                .setCategory(c)
+                .addPermissionOverwrite(everyone, defaultPermissions)
+                .addPermissionOverwrite(creator, playerPerms)
                 .create()
                 .thenAccept(tc -> database.registerChannel(tc.getId(), creator.getId(), LocalDateTime.now().plusDays(1)));
 
             server.createVoiceChannelBuilder()
-            	.setName(channel)
-            	.setCategory(c)
-            	.addPermissionOverwrite(everyone, defaultPermissions)
-            	.addPermissionOverwrite(creator, playerPerms)
-            	.create()
-            	.thenAccept(tc -> database.registerChannel(tc.getId(), creator.getId(), LocalDateTime.now().plusDays(1)));
+                .setName(channel)
+                .setCategory(c)
+                .addPermissionOverwrite(everyone, defaultPermissions)
+                .addPermissionOverwrite(creator, playerPerms)
+                .create()
+                .thenAccept(tc -> database.registerChannel(tc.getId(), creator.getId(), LocalDateTime.now().plusDays(1)));
         });
 
         return String.format(MSG_CHANNEL_CREATED, channel);
-	}
+    }
 
 }
