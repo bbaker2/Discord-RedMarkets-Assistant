@@ -25,9 +25,10 @@ public class CommonMocks {
     public static final long SERVER_ID = 22222222;
 
     public CommonMocks() {
-    	when(USER.getId()).thenReturn(USER_ID);
-    	when(CHANNEL.getId()).thenReturn(CHANNEL_ID);
-    	when(SERVER.getId()).thenReturn(SERVER_ID);
+        when(USER.getId()).thenReturn(USER_ID);
+        when(USER.getNicknameMentionTag()).thenReturn("<"+USER_ID+">");
+        when(CHANNEL.getId()).thenReturn(CHANNEL_ID);
+        when(SERVER.getId()).thenReturn(SERVER_ID);
     }
 
     public static Message genMsg(String content) {

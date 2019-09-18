@@ -19,13 +19,14 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 
 import com.bbaker.discord.redmarket.commands.StandardCommand;
-import com.bbaker.discord.redmarket.db.DatabaseService;
+import com.bbaker.discord.redmarket.exceptions.ServerException;
 
 import de.btobastian.sdcf4j.Command;
 import de.btobastian.sdcf4j.CommandExecutor;
 
 public class ChannelCommand implements CommandExecutor, StandardCommand {
 
+    public static final String MSG_CHANNEL_DELETED = "%s: Channels `%s` were deleted";
     public static final String MSG_CHANNEL_CREATED = "Channel `%s` created.";
 
     private DiscordApi api = null;
@@ -34,10 +35,10 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
     private Pattern VALID_NAME = Pattern.compile("[\\w|\\-]+");
     private ChannelStorage database;
 
-    public ChannelCommand(DiscordApi api, String category, DatabaseService dbService) {
+    public ChannelCommand(DiscordApi api, String category, ChannelStorage storage) {
         this.api = api;
         this.category = category;
-        this.database = new ChannelStorageImpl(dbService);
+        this.database = storage;
         playerPerms = new PermissionsBuilder()
                 .setAllowed(
                         PermissionType.READ_MESSAGE_HISTORY,
@@ -82,15 +83,22 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
 
         String action = args.remove(0);
 
-        switch (action.toLowerCase()) {
+        try {
+            switch (action.toLowerCase()) {
             case "create":
+            case "c":
                 return createChannel(args, creator, server);
-            case "remove":
-                return removeChannel(args, creator, message.getMentionedChannels(), server);
+            case "delete":
+            case "d":
+                return deleteChannel(args, creator, message.getMentionedChannels(), server);
             case "add":
+            case "a":
                 return addUser(args, creator, server);
             default:
                 return String.format("Unknown action `%s`. Supported actions: `create`", action);
+            }
+        } catch (ServerException e) {
+            return e.getMessage();
         }
     }
 
@@ -99,15 +107,14 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
         return null;
     }
 
-    private String removeChannel(List<String> args, User owner, List<ServerTextChannel> mentioned, Server server) {
+    private String deleteChannel(List<String> args, User owner, List<ServerTextChannel> mentioned, Server server) throws ServerException {
         if(args.isEmpty()) {
             return "Missing channel name. Try `!channel remove <chanel_name>`";
         }
 
         String channel = pop(args);
-        System.out.println(channel);
 
-        ChannelCategory category = getCategory().get();
+        ChannelCategory category = getCategory();
 
         // If someone used a #mentioned tag, attempt to convert it into this string name instead
         for(ServerTextChannel stc : mentioned) {
@@ -124,37 +131,42 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
         // 1.) The channels has an owner
         // 2.) If the owner is the one trying to delete it
         // Otherwise, record an error
-        List<String> responses = new ArrayList<String>();
+        List<ServerChannel> toDelete = new ArrayList<ServerChannel>();
         for(ServerChannel sc : channelList) {
             if(sc.getName().equalsIgnoreCase(channel)) {
                 Optional<Long> realOwner = database.getOwner(sc.getId());
                 if(realOwner.isPresent()) {
                     if(realOwner.get() != owner.getId()) {
-                        responses.add(String.format("%s: You are not the owner of `%s`. No changes made", owner.getNicknameMentionTag(), channel));
+                        return String.format("%s: You are not the owner of `%s`. No changes made", owner.getNicknameMentionTag(), channel);
                     } else {
-                        database.unregisterChannel(sc.getId()); // remove the owner from the database
-                        responses.add(String.format("`%s` deleted", channel));
-                        sc.delete(); // actually delete the channel
+                        toDelete.add(sc);
                     }
                 } else {
-                    responses.add(String.format("Unable to determine the ownerd of `%s`. No changes made", channel));
+                    return String.format("%s: Unable to determine the ownerd of `%s`. No changes made", owner.getNicknameMentionTag(), channel);
                 }
             }
         }
 
-        if(responses.isEmpty()) {
-            return String.format("No channels with the name `%s` was found", channel);
+        // if no messages were generated, it is safe to assume we were unsuccessful at finding a match
+        if(toDelete.isEmpty()) {
+            return String.format("%s: No channels with the name `%s` was found", owner.getNicknameMentionTag(), channel);
         } else {
-            return String.join("\n", responses);
+            for(ServerChannel sc : toDelete) {
+                database.unregisterChannel(sc.getId()); // remove the owner from the database
+                sc.delete(); // actually delete the channel
+            }
+            return String.format(MSG_CHANNEL_DELETED, owner.getNicknameMentionTag(), channel);
         }
     }
 
-    private Optional<ChannelCategory> getCategory(){
+    private ChannelCategory getCategory() throws ServerException{
         return api.getChannelCategoriesByNameIgnoreCase(category)
-                .stream().findFirst();
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new ServerException("No category named `%s` found. Unable to continue.", category));
     }
 
-    private String createChannel(List<String> args, User creator, Server server) {
+    private String createChannel(List<String> args, User creator, Server server) throws ServerException {
         if(args.isEmpty()) {
             return "Missing channel name. Try `!channel create <chanel_name>`";
         }
@@ -165,32 +177,32 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
             return "Channel name can only contain alpha-numeric, underscores, and dashes";
         }
 
-        ChannelCategory category = getCategory().get();
+        ChannelCategory chanCategory = getCategory();
 
-        boolean preExisting = category.getChannels().stream().anyMatch(sc -> sc.getName().equalsIgnoreCase(channel));
+        boolean preExisting = chanCategory.getChannels().stream().anyMatch(sc -> sc.getName().equalsIgnoreCase(channel));
         if(preExisting) {
             return String.format("Channels for `%s` already exists. No changes made.", channel);
         }
 
-        getCategory().ifPresent(c -> {
-            Role everyone = server.getEveryoneRole();
-            Permissions defaultPermissions = c.getOverwrittenPermissions(everyone);
-            server.createTextChannelBuilder()
-                .setName(channel)
-                .setCategory(c)
-                .addPermissionOverwrite(everyone, defaultPermissions)
-                .addPermissionOverwrite(creator, playerPerms)
-                .create()
-                .thenAccept(tc -> database.registerChannel(tc.getId(), creator.getId(), LocalDateTime.now().plusDays(1)));
+        Role everyone = server.getEveryoneRole();
+        Permissions defaultPermissions = chanCategory.getOverwrittenPermissions(everyone);
 
-            server.createVoiceChannelBuilder()
-                .setName(channel)
-                .setCategory(c)
-                .addPermissionOverwrite(everyone, defaultPermissions)
-                .addPermissionOverwrite(creator, playerPerms)
-                .create()
-                .thenAccept(tc -> database.registerChannel(tc.getId(), creator.getId(), LocalDateTime.now().plusDays(1)));
-        });
+        LocalDateTime tomorrow = LocalDateTime.now().plusDays(1);
+        server.createTextChannelBuilder()
+            .setName(channel)
+            .setCategory(chanCategory)
+            .addPermissionOverwrite(everyone, defaultPermissions)
+            .addPermissionOverwrite(creator, playerPerms)
+            .create()
+            .thenAccept(tc -> database.registerChannel(tc.getId(), creator.getId(), tomorrow));
+
+        server.createVoiceChannelBuilder()
+            .setName(channel)
+            .setCategory(chanCategory)
+            .addPermissionOverwrite(everyone, defaultPermissions)
+            .addPermissionOverwrite(creator, playerPerms)
+            .create()
+            .thenAccept(vc -> database.registerChannel(vc.getId(), creator.getId(), tomorrow));
 
         return String.format(MSG_CHANNEL_CREATED, channel);
     }
