@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>bbaker.discord.redmarket</groupId>
@@ -20,7 +21,8 @@
             </goals>
             <configuration>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>
                     com.bbaker.discord.redmarket.Launcher
                   </mainClass>
@@ -51,8 +53,8 @@
   </repositories>
 
   <dependencyManagement>
-  <dependencies>
-    <dependency>
+    <dependencies>
+      <dependency>
         <groupId>org.jdbi</groupId>
         <artifactId>jdbi3-bom</artifactId>
         <type>pom</type>
@@ -65,16 +67,16 @@
 
   <dependencies>
     <dependency>
-        <groupId>com.github.bbaker2</groupId>
-        <artifactId>args-eval</artifactId>
-        <version>1.0.0</version>
-      </dependency>
+      <groupId>com.github.bbaker2</groupId>
+      <artifactId>args-eval</artifactId>
+      <version>1.0.0</version>
+    </dependency>
 
     <dependency>
-        <groupId>org.javacord</groupId>
-        <artifactId>javacord</artifactId>
-        <version>3.0.4</version>
-        <type>pom</type>
+      <groupId>org.javacord</groupId>
+      <artifactId>javacord</artifactId>
+      <version>3.0.4</version>
+      <type>pom</type>
     </dependency>
 
     <dependency>
@@ -117,6 +119,13 @@
     <dependency>
       <groupId>org.jdbi</groupId>
       <artifactId>jdbi3-sqlobject</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.5.2</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
