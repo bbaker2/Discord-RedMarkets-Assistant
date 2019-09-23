@@ -104,7 +104,7 @@ class ChannelCommandTest extends CommonMocks {
     }
 
     @Test
-    void testRemoveChannel() {
+    void testDeleteChannel() {
         Message msg = genMsg("!c delete hello-world");
         when(msg.getMentionedChannels()).thenReturn(Arrays.asList()); // no tags were used for this test
         when(USER.getRoles(SERVER)).thenReturn(Arrays.asList(gmRole)); // the user has the GM role for this test
@@ -138,6 +138,28 @@ class ChannelCommandTest extends CommonMocks {
                 "Make sure the correct success message was returned");
         verify(storage).unregisterChannel(5l);
         verify(storage).unregisterChannel(6l);
+
+    }
+
+    @Test
+    void testNotCreatorDeleteChannel() {
+        Message msg = genMsg("!c delete notyou");
+        when(msg.getMentionedChannels()).thenReturn(Arrays.asList()); // no tags were used for this test
+        when(USER.getRoles(SERVER)).thenReturn(Arrays.asList(gmRole)); // the user has the GM role for this test
+
+        ServerTextChannel stc = mock(ServerTextChannel.class);
+        when(stc.getName()).thenReturn("notyou");
+        when(stc.getId()).thenReturn(5l);
+
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
+        when(storage.getOwner(5l)).thenReturn(Optional.of(USER_ID+1)); // make sure you return a user ID other than the one who sent the message
+
+        String actual = cmd.onChannel(msg);
+        assertEquals(
+                String.format(ChannelCommand.MSG_NOT_OWNER, USER.getNicknameMentionTag(), "notyou"),
+                actual,
+                "Make sure an error is returned when the non-owner tries to delete a channel");
+        verify(storage, never()).unregisterChannel(anyLong());
 
     }
 

@@ -26,6 +26,7 @@ import de.btobastian.sdcf4j.CommandExecutor;
 
 public class ChannelCommand implements CommandExecutor, StandardCommand {
 
+    public static final String MSG_NOT_OWNER = "%s: You are not the owner of `%s`. No changes made";
     public static final String MSG_CHANNEL_DELETED = "%s: Channels `%s` were deleted";
     public static final String MSG_CHANNEL_CREATED = "Channel `%s` created.";
 
@@ -137,7 +138,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
                 Optional<Long> realOwner = database.getOwner(sc.getId());
                 if(realOwner.isPresent()) {
                     if(realOwner.get() != owner.getId()) {
-                        return String.format("%s: You are not the owner of `%s`. No changes made", owner.getNicknameMentionTag(), channel);
+                        return String.format(MSG_NOT_OWNER, owner.getNicknameMentionTag(), channel);
                     } else {
                         toDelete.add(sc);
                     }
