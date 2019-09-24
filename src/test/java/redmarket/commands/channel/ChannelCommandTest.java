@@ -1,10 +1,7 @@
 package redmarket.commands.channel;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
@@ -25,6 +22,7 @@ import org.javacord.api.entity.channel.ServerVoiceChannelBuilder;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.permission.Permissions;
 import org.javacord.api.entity.permission.Role;
+import org.javacord.api.entity.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +40,8 @@ class ChannelCommandTest extends CommonMocks {
     private Role gmRole = null;
     private Role everyone = null;
     private ChannelCommand cmd = null;
+    private ServerTextChannel textChannel;
+    private ServerVoiceChannel voiceChannel;
 
     private static final String CATEGORY = "test";
 
@@ -67,6 +67,15 @@ class ChannelCommandTest extends CommonMocks {
 
         cmd = new ChannelCommand(api, CATEGORY, storage);
 
+        textChannel = mock(ServerTextChannel.class);
+        when(textChannel.getName()).thenReturn("hello-world");
+        when(textChannel.getId()).thenReturn(5l);
+        when(textChannel.getMentionTag()).thenReturn("<5:hello-world>");
+
+        voiceChannel = mock(ServerVoiceChannel.class);
+        when(voiceChannel.getName()).thenReturn("hello-world");
+        when(voiceChannel.getId()).thenReturn(6L);
+
     }
 
     @Test
@@ -89,10 +98,7 @@ class ChannelCommandTest extends CommonMocks {
 
     @Test
     void testCreatePreExistingChannel() {
-         ServerTextChannel stc = mock(ServerTextChannel.class);
-         when(stc.getName()).thenReturn("hello-world");
-         when(stc.getId()).thenReturn(5l);
-         when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
+         when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel));
 
          String actual = cmd.onChannel(genMsg("!c create hello-world"));
          assertEquals(String.format(ChannelCommand.MSG_DUPLICATE_CHANNEL, "hello-world"), actual);
@@ -101,26 +107,21 @@ class ChannelCommandTest extends CommonMocks {
     @Test
     void testCreateChannel() {
         // hello-world is our expected new channel names
-
-        ServerTextChannel stc = mock(ServerTextChannel.class);
         CompletableFuture<ServerTextChannel> cfstc = mock(CompletableFuture.class);
         ServerTextChannelBuilder stcb = mock(ServerTextChannelBuilder.class);
 
         when(SERVER.createTextChannelBuilder()).thenReturn(stcb);
         when(stcb.setCategory(channelCategory)).thenReturn(stcb);
         when(stcb.create()).thenReturn(cfstc);
-        detailedMockAndVerify(stcb, "hello-world", 111111l, stc, cfstc);
+        detailedMockAndVerify(stcb, "hello-world", 111111l, textChannel, cfstc);
 
-        ServerVoiceChannel svc = mock(ServerVoiceChannel.class);
         CompletableFuture<ServerVoiceChannel> cfsvc = mock(CompletableFuture.class);
         ServerVoiceChannelBuilder svcb = mock(ServerVoiceChannelBuilder.class);
 
         when(SERVER.createVoiceChannelBuilder()).thenReturn(svcb);
         when(svcb.setCategory(channelCategory)).thenReturn(svcb);
         when(svcb.create()).thenReturn(cfsvc);
-        detailedMockAndVerify(svcb, "hello-world", 222222l, svc, cfsvc);
-
-
+        detailedMockAndVerify(svcb, "hello-world", 222222l, voiceChannel, cfsvc);
 
         when(channelCategory.getOverwrittenPermissions(any(Role.class))).thenReturn(mock(Permissions.class));
         when(USER.getRoles(SERVER)).thenReturn(Arrays.asList(gmRole)); // the user has the GM role for this test
@@ -138,7 +139,7 @@ class ChannelCommandTest extends CommonMocks {
 
         // Create 10 channels (5 voice, 5 text). Put our expected channel somewhere in the middle
         // hello-world should have Ids 5 & 6
-        String[] dummyNames = new String[] {"foo", "bar", "hello-world", "fizz", "bar"};
+        String[] dummyNames = new String[] {"foo", "bar", "fizz", "bar"};
         List<ServerChannel> foundChannels = new ArrayList<ServerChannel>();
         long id = 1;
         for(String name : dummyNames) {
@@ -153,9 +154,12 @@ class ChannelCommandTest extends CommonMocks {
             foundChannels.add(svc);
         }
 
+        foundChannels.add(5, textChannel);
+        foundChannels.add(6, voiceChannel);
+
         when(channelCategory.getChannels()).thenReturn(foundChannels);
-        when(storage.getOwner(5l)).thenReturn(Optional.of(USER_ID));
-        when(storage.getOwner(6l)).thenReturn(Optional.of(USER_ID));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID));
+        when(storage.getOwner(voiceChannel.getId())).thenReturn(Optional.of(USER_ID));
 
         String actual = cmd.onChannel(msg);
 
@@ -170,16 +174,12 @@ class ChannelCommandTest extends CommonMocks {
 
     @Test
     void testNotCreatorDeleteChannel() {
-        ServerTextChannel stc = mock(ServerTextChannel.class);
-        when(stc.getName()).thenReturn("notyou");
-        when(stc.getId()).thenReturn(5l);
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID+1)); // make sure you return a user ID other than the one who sent the message
 
-        when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
-        when(storage.getOwner(stc.getId())).thenReturn(Optional.of(USER_ID+1)); // make sure you return a user ID other than the one who sent the message
-
-        String actual = cmd.onChannel(genMsg("!c delete notyou"));
+        String actual = cmd.onChannel(genMsg("!c delete " + textChannel.getName()));
         assertEquals(
-                String.format(ChannelCommand.MSG_NOT_OWNER, USER.getNicknameMentionTag(), "notyou"),
+                String.format(ChannelCommand.MSG_NOT_OWNER, USER.getNicknameMentionTag(), textChannel.getName()),
                 actual,
                 "Make sure an error is returned when the non-owner tries to delete a channel");
         verify(storage, never()).unregisterChannel(anyLong());
@@ -188,14 +188,10 @@ class ChannelCommandTest extends CommonMocks {
 
     @Test
     void testDeleteNoOwner() {
-        ServerTextChannel stc = mock(ServerTextChannel.class);
-        when(stc.getName()).thenReturn("hello-world");
-        when(stc.getId()).thenReturn(5l);
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.empty());
 
-        when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
-        when(storage.getOwner(stc.getId())).thenReturn(Optional.empty());
-
-        String actual = cmd.onChannel(genMsg("!c delete hello-world"));
+        String actual = cmd.onChannel(genMsg("!c delete "+textChannel.getName()));
         assertEquals(
                 String.format(ChannelCommand.MSG_NO_OWNER, USER.getNicknameMentionTag(), "hello-world"),
                 actual,
@@ -205,10 +201,7 @@ class ChannelCommandTest extends CommonMocks {
 
     @Test
     void testDeleteChannelNotFound() {
-        ServerTextChannel stc = mock(ServerTextChannel.class);
-        when(stc.getName()).thenReturn("hello-world");
-        when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
-
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(voiceChannel));
 
         String actual = cmd.onChannel(genMsg("!c delete hello-ward"));
         assertEquals(
@@ -221,28 +214,37 @@ class ChannelCommandTest extends CommonMocks {
 
     @Test
     void testDeleteWithChannelTag() {
-        ServerTextChannel stc = mock(ServerTextChannel.class);
-        when(stc.getName()).thenReturn("hello-world");
-        when(stc.getId()).thenReturn(5l);
-        when(stc.getMentionTag()).thenReturn("<5:hello-world>");
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel, voiceChannel));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID));
+        when(storage.getOwner(voiceChannel.getId())).thenReturn(Optional.of(USER_ID));
 
-        ServerVoiceChannel svc = mock(ServerVoiceChannel.class);
-        when(svc.getName()).thenReturn("hello-world");
-        when(svc.getId()).thenReturn(6L);
-        when(stc.getMentionTag()).thenReturn("<6:hello-world>");
-
-        when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc, svc));
-        when(storage.getOwner(stc.getId())).thenReturn(Optional.of(USER_ID));
-        when(storage.getOwner(svc.getId())).thenReturn(Optional.of(USER_ID));
-
-        String actual = cmd.onChannel(genMsg("!c delete "+stc.getMentionTag(), stc));
+        String actual = cmd.onChannel(genMsg("!c delete "+textChannel.getMentionTag(), textChannel));
         assertEquals(
-                String.format(ChannelCommand.MSG_CHANNEL_DELETED, USER.getNicknameMentionTag(), "hello-world"),
+                String.format(ChannelCommand.MSG_CHANNEL_DELETED, USER.getNicknameMentionTag(), textChannel.getMentionTag()),
                 actual,
                 "Make sure the correct channels were found for deletion");
 
-        verify(storage).unregisterChannel(stc.getId());
-        verify(storage).unregisterChannel(svc.getId());
+        verify(storage).unregisterChannel(textChannel.getId());
+        verify(storage).unregisterChannel(voiceChannel.getId());
+    }
+
+    @Test
+    void testAddUsers() {
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel, voiceChannel));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID));
+        when(storage.getOwner(voiceChannel.getId())).thenReturn(Optional.of(USER_ID));
+
+        User playerA = mock(User.class);
+        when(playerA.getName()).thenReturn("jack");
+        when(playerA.getMentionTag()).thenReturn("<jack>");
+
+        User playerB = mock(User.class);
+        when(playerB.getName()).thenReturn("jill");
+        when(playerB.getMentionTag()).thenReturn("<jill>");
+
+        // We are adding one user via nick name an one
+        String msg = String.format("!c add %s %s", textChannel.getMentionTag(), playerA.getName(), playerB.getMentionTag());
+        String actual = cmd.onChannel(genMsg(msg, playerB));
     }
 
     private <T extends ServerChannel> void detailedMockAndVerify(ServerChannelBuilder scb,  String name, long channelId, T serverChannel, CompletableFuture<T> future) {

@@ -1,8 +1,8 @@
 package redmarket;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,15 +35,15 @@ public class CommonMocks {
 
 
     public static Message genMsg(String content, ServerTextChannel... taggedChannels) {
-        return genMsg(content, List.of(), List.of(taggedChannels));
+        return genMsg(content, Arrays.asList(), Arrays.asList(taggedChannels));
     }
 
     public static Message genMsg(String content, User... taggedUsers) {
-        return genMsg(content, List.of(taggedUsers), List.of());
+        return genMsg(content, Arrays.asList(taggedUsers), Arrays.asList());
     }
 
     public static Message genMsg(String content) {
-        return genMsg(content, List.of(), List.of());
+        return genMsg(content, Arrays.asList(), Arrays.asList());
     }
 
     public static Message genMsg(String content, List<User> taggedUsers, List<ServerTextChannel> taggedChannels) {
