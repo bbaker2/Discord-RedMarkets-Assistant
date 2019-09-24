@@ -3,9 +3,11 @@ package redmarket;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.javacord.api.entity.channel.Channel;
+import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -31,7 +33,20 @@ public class CommonMocks {
         when(SERVER.getId()).thenReturn(SERVER_ID);
     }
 
+
+    public static Message genMsg(String content, ServerTextChannel... taggedChannels) {
+        return genMsg(content, List.of(), List.of(taggedChannels));
+    }
+
+    public static Message genMsg(String content, User... taggedUsers) {
+        return genMsg(content, List.of(taggedUsers), List.of());
+    }
+
     public static Message genMsg(String content) {
+        return genMsg(content, List.of(), List.of());
+    }
+
+    public static Message genMsg(String content, List<User> taggedUsers, List<ServerTextChannel> taggedChannels) {
         Message msg = mock(Message.class, Mockito.RETURNS_DEEP_STUBS);
 
         when(msg.getAuthor().getId()).thenReturn(USER_ID);
@@ -39,6 +54,8 @@ public class CommonMocks {
         when(msg.getChannel().getId()).thenReturn(CHANNEL_ID);
         when(msg.getContent()).thenReturn(content);
         when(msg.getServer()).thenReturn(Optional.of(SERVER));
+        when(msg.getMentionedChannels()).thenReturn(taggedChannels);
+        when(msg.getMentionedUsers()).thenReturn(taggedUsers);
         return msg;
     }
 }

@@ -63,10 +63,39 @@ class ChannelCommandTest extends CommonMocks {
 
         when(SERVER.getEveryoneRole()).thenReturn(everyone);
 
-
+           when(USER.getRoles(SERVER)).thenReturn(Arrays.asList(gmRole)); // the user has the GM role for this test
 
         cmd = new ChannelCommand(api, CATEGORY, storage);
 
+    }
+
+    @Test
+    void testCreateChannelWithBadName() {
+        String actual = null;
+
+        actual = cmd.onChannel(genMsg("!c create !!!!!helloWorld"));
+        assertEquals(ChannelCommand.MSG_BAD_CHAN_NAME, actual);
+
+        actual = cmd.onChannel(genMsg("!c create hello#world"));
+        assertEquals(ChannelCommand.MSG_BAD_CHAN_NAME, actual);
+
+        actual = cmd.onChannel(genMsg("!c create \\\\hello"));
+        assertEquals(ChannelCommand.MSG_BAD_CHAN_NAME, actual);
+
+        verify(SERVER, never()).createTextChannelBuilder();
+        verify(SERVER, never()).createVoiceChannelBuilder();
+        verify(storage, never()).registerChannel(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void testCreatePreExistingChannel() {
+         ServerTextChannel stc = mock(ServerTextChannel.class);
+         when(stc.getName()).thenReturn("hello-world");
+         when(stc.getId()).thenReturn(5l);
+         when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
+
+         String actual = cmd.onChannel(genMsg("!c create hello-world"));
+         assertEquals(String.format(ChannelCommand.MSG_DUPLICATE_CHANNEL, "hello-world"), actual);
     }
 
     @Test
@@ -106,8 +135,6 @@ class ChannelCommandTest extends CommonMocks {
     @Test
     void testDeleteChannel() {
         Message msg = genMsg("!c delete hello-world");
-        when(msg.getMentionedChannels()).thenReturn(Arrays.asList()); // no tags were used for this test
-        when(USER.getRoles(SERVER)).thenReturn(Arrays.asList(gmRole)); // the user has the GM role for this test
 
         // Create 10 channels (5 voice, 5 text). Put our expected channel somewhere in the middle
         // hello-world should have Ids 5 & 6
@@ -143,24 +170,79 @@ class ChannelCommandTest extends CommonMocks {
 
     @Test
     void testNotCreatorDeleteChannel() {
-        Message msg = genMsg("!c delete notyou");
-        when(msg.getMentionedChannels()).thenReturn(Arrays.asList()); // no tags were used for this test
-        when(USER.getRoles(SERVER)).thenReturn(Arrays.asList(gmRole)); // the user has the GM role for this test
-
         ServerTextChannel stc = mock(ServerTextChannel.class);
         when(stc.getName()).thenReturn("notyou");
         when(stc.getId()).thenReturn(5l);
 
         when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
-        when(storage.getOwner(5l)).thenReturn(Optional.of(USER_ID+1)); // make sure you return a user ID other than the one who sent the message
+        when(storage.getOwner(stc.getId())).thenReturn(Optional.of(USER_ID+1)); // make sure you return a user ID other than the one who sent the message
 
-        String actual = cmd.onChannel(msg);
+        String actual = cmd.onChannel(genMsg("!c delete notyou"));
         assertEquals(
                 String.format(ChannelCommand.MSG_NOT_OWNER, USER.getNicknameMentionTag(), "notyou"),
                 actual,
                 "Make sure an error is returned when the non-owner tries to delete a channel");
         verify(storage, never()).unregisterChannel(anyLong());
 
+    }
+
+    @Test
+    void testDeleteNoOwner() {
+        ServerTextChannel stc = mock(ServerTextChannel.class);
+        when(stc.getName()).thenReturn("hello-world");
+        when(stc.getId()).thenReturn(5l);
+
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
+        when(storage.getOwner(stc.getId())).thenReturn(Optional.empty());
+
+        String actual = cmd.onChannel(genMsg("!c delete hello-world"));
+        assertEquals(
+                String.format(ChannelCommand.MSG_NO_OWNER, USER.getNicknameMentionTag(), "hello-world"),
+                actual,
+                "Make sure we short circuit when we cannot find the owener in the DB");
+        verify(storage, never()).unregisterChannel(anyLong());
+    }
+
+    @Test
+    void testDeleteChannelNotFound() {
+        ServerTextChannel stc = mock(ServerTextChannel.class);
+        when(stc.getName()).thenReturn("hello-world");
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc));
+
+
+        String actual = cmd.onChannel(genMsg("!c delete hello-ward"));
+        assertEquals(
+                String.format(ChannelCommand.MSG_CHANNEL_NOT_FOUND, USER.getNicknameMentionTag(), "hello-ward"),
+                actual,
+                "Ward != World. So no matching channels should have been found");
+        verify(storage, never()).getOwner(anyLong());
+        verify(storage, never()).unregisterChannel(anyLong());
+    }
+
+    @Test
+    void testDeleteWithChannelTag() {
+        ServerTextChannel stc = mock(ServerTextChannel.class);
+        when(stc.getName()).thenReturn("hello-world");
+        when(stc.getId()).thenReturn(5l);
+        when(stc.getMentionTag()).thenReturn("<5:hello-world>");
+
+        ServerVoiceChannel svc = mock(ServerVoiceChannel.class);
+        when(svc.getName()).thenReturn("hello-world");
+        when(svc.getId()).thenReturn(6L);
+        when(stc.getMentionTag()).thenReturn("<6:hello-world>");
+
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(stc, svc));
+        when(storage.getOwner(stc.getId())).thenReturn(Optional.of(USER_ID));
+        when(storage.getOwner(svc.getId())).thenReturn(Optional.of(USER_ID));
+
+        String actual = cmd.onChannel(genMsg("!c delete "+stc.getMentionTag(), stc));
+        assertEquals(
+                String.format(ChannelCommand.MSG_CHANNEL_DELETED, USER.getNicknameMentionTag(), "hello-world"),
+                actual,
+                "Make sure the correct channels were found for deletion");
+
+        verify(storage).unregisterChannel(stc.getId());
+        verify(storage).unregisterChannel(svc.getId());
     }
 
     private <T extends ServerChannel> void detailedMockAndVerify(ServerChannelBuilder scb,  String name, long channelId, T serverChannel, CompletableFuture<T> future) {

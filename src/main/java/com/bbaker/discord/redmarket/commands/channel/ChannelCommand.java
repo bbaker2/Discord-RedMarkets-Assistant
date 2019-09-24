@@ -26,6 +26,10 @@ import de.btobastian.sdcf4j.CommandExecutor;
 
 public class ChannelCommand implements CommandExecutor, StandardCommand {
 
+    public static final String MSG_NO_OWNER = "%s: Unable to determine the ownerd of `%s`. No changes made";
+	public static final String MSG_DUPLICATE_CHANNEL = "Channels for `%s` already exists. No changes made.";
+    public static final String MSG_BAD_CHAN_NAME = "Channel name can only contain alpha-numeric, underscores, and dashes";
+    public static final String MSG_CHANNEL_NOT_FOUND = "%s: No channels with the name `%s` was found. No changes made";
     public static final String MSG_NOT_OWNER = "%s: You are not the owner of `%s`. No changes made";
     public static final String MSG_CHANNEL_DELETED = "%s: Channels `%s` were deleted";
     public static final String MSG_CHANNEL_CREATED = "Channel `%s` created.";
@@ -143,14 +147,14 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
                         toDelete.add(sc);
                     }
                 } else {
-                    return String.format("%s: Unable to determine the ownerd of `%s`. No changes made", owner.getNicknameMentionTag(), channel);
+                    return String.format(MSG_NO_OWNER, owner.getNicknameMentionTag(), channel);
                 }
             }
         }
 
         // if no messages were generated, it is safe to assume we were unsuccessful at finding a match
         if(toDelete.isEmpty()) {
-            return String.format("%s: No channels with the name `%s` was found", owner.getNicknameMentionTag(), channel);
+            return String.format(MSG_CHANNEL_NOT_FOUND, owner.getNicknameMentionTag(), channel);
         } else {
             for(ServerChannel sc : toDelete) {
                 database.unregisterChannel(sc.getId()); // remove the owner from the database
@@ -175,14 +179,14 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
         String channel = pop(args);
 
         if(!VALID_NAME.matcher(channel).matches()) {
-            return "Channel name can only contain alpha-numeric, underscores, and dashes";
+            return MSG_BAD_CHAN_NAME;
         }
 
         ChannelCategory chanCategory = getCategory();
 
         boolean preExisting = chanCategory.getChannels().stream().anyMatch(sc -> sc.getName().equalsIgnoreCase(channel));
         if(preExisting) {
-            return String.format("Channels for `%s` already exists. No changes made.", channel);
+            return String.format(MSG_DUPLICATE_CHANNEL, channel);
         }
 
         Role everyone = server.getEveryoneRole();
