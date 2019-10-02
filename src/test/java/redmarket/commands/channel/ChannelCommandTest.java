@@ -193,7 +193,7 @@ class ChannelCommandTest extends CommonMocks {
 
         String actual = cmd.onChannel(genMsg("!c delete "+textChannel.getName()));
         assertEquals(
-                String.format(ChannelCommand.MSG_NO_OWNER, USER.getNicknameMentionTag(), "hello-world"),
+                String.format(ChannelCommand.MSG_NO_OWNER, USER.getNicknameMentionTag(), textChannel.getName()),
                 actual,
                 "Make sure we short circuit when we cannot find the owener in the DB");
         verify(storage, never()).unregisterChannel(anyLong());
@@ -234,17 +234,47 @@ class ChannelCommandTest extends CommonMocks {
         when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID));
         when(storage.getOwner(voiceChannel.getId())).thenReturn(Optional.of(USER_ID));
 
-        User playerA = mock(User.class);
-        when(playerA.getName()).thenReturn("jack");
-        when(playerA.getMentionTag()).thenReturn("<jack>");
-
-        User playerB = mock(User.class);
-        when(playerB.getName()).thenReturn("jill");
-        when(playerB.getMentionTag()).thenReturn("<jill>");
+        User playerA = mockUser("jack");
+        User playerB = mockUser("jill");
 
         // We are adding one user via nick name an one
         String msg = String.format("!c add %s %s", textChannel.getMentionTag(), playerA.getName(), playerB.getMentionTag());
         String actual = cmd.onChannel(genMsg(msg, playerB));
+    }
+
+    @Test
+    void testAddUsersNotAsOwner() {
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel, voiceChannel));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID+1));		// make sure the user ID is different from the message user
+        when(storage.getOwner(voiceChannel.getId())).thenReturn(Optional.of(USER_ID+1)); 	// make sure the user ID is different from the message user
+
+        User bob = mockUser("bob");
+
+        // We are adding one user via nick name an one
+        String msg = String.format("!c add %s %s", textChannel.getName(), bob.getName());
+        String actual = cmd.onChannel(genMsg(msg, bob));
+        assertEquals(
+                String.format(ChannelCommand.MSG_NOT_OWNER, USER.getNicknameMentionTag(), textChannel.getName()),
+                actual,
+                "Make sure we short circuit when we cannot find the owener in the DB while adding users");
+
+        // Make sure we do not attempt to add users anyways
+        verify(textChannel, never()).createUpdater();
+        verify(voiceChannel, never()).createUpdater();
+    }
+
+    @Test
+    void testAddUserDoesNotExist() {
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel, voiceChannel));
+        String dneUser = "dns";
+        String msg = String.format("!c add %s %s", textChannel.getMentionTag(), dneUser);
+        String actual = cmd.onChannel(genMsg(msg));
+        String expected = String.format(ChannelCommand.MSG_USER_NOT_FOUND, USER.getMentionTag(), dneUser);
+
+        assertEquals(expected, actual, "Make sure the correct error message was returned when naming a user who does not exist");
+        // Make sure we do not attempt to add users anyways
+        verify(textChannel, never()).createUpdater();
+        verify(voiceChannel, never()).createUpdater();
     }
 
     private <T extends ServerChannel> void detailedMockAndVerify(ServerChannelBuilder scb,  String name, long channelId, T serverChannel, CompletableFuture<T> future) {
@@ -260,6 +290,5 @@ class ChannelCommandTest extends CommonMocks {
             return future;
         });
     }
-
 
 }

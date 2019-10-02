@@ -29,11 +29,12 @@ import de.btobastian.sdcf4j.CommandExecutor;
 
 public class ChannelCommand implements CommandExecutor, StandardCommand {
 
+    public static final String MSG_USER_NOT_FOUND = "%s: Unable to find user `%s`. No action taken.";
     public static final String MSG_NO_OWNER = "%s: Unable to determine the ownerd of `%s`. No changes made";
     public static final String MSG_DUPLICATE_CHANNEL = "Channels for `%s` already exists. No changes made.";
     public static final String MSG_BAD_CHAN_NAME = "Channel name can only contain alpha-numeric, underscores, and dashes";
     public static final String MSG_CHANNEL_NOT_FOUND = "%s: No channels with the name `%s` was found. No changes made";
-    public static final String MSG_NOT_OWNER = "%s: You are not the owner of `%s`. No changes made";
+    public static final String MSG_NOT_OWNER = "%s: You are not the owner of %s. No changes made";
     public static final String MSG_CHANNEL_DELETED = "%s: Channels `%s` were deleted";
     public static final String MSG_CHANNEL_CREATED = "Channel `%s` created.";
 
@@ -152,7 +153,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
             // If not, attempt to find an associated user by name and/or nickname
             Collection<User> matchedUsers = server.getMembersByDisplayNameIgnoreCase(userName);
             if(matchedUsers.isEmpty()) {
-                throw new CommandException("%s: Unable to find user `%s`. No action taken.", author.getMentionTag(), userName);
+                throw new CommandException(MSG_USER_NOT_FOUND, author.getMentionTag(), userName);
             } else {
                 foundUsers.addAll(matchedUsers);
             }

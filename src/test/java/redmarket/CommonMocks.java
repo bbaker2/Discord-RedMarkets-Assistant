@@ -58,4 +58,11 @@ public class CommonMocks {
         when(msg.getMentionedUsers()).thenReturn(taggedUsers);
         return msg;
     }
+
+    public User mockUser(String username) {
+        User u = mock(User.class);
+        when(u.getName()).thenReturn(username);
+        when(u.getMentionTag()).thenReturn("<"+username+">");
+        return u;
+    }
 }
