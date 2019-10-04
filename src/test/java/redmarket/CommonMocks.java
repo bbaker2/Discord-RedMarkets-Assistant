@@ -1,11 +1,14 @@
 package redmarket;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
@@ -17,6 +20,7 @@ import org.mockito.Mockito;
 
 public class CommonMocks {
 
+
     public static final long USER_ID = 11111111;
     public static final User USER = mock(User.class);
 
@@ -26,6 +30,8 @@ public class CommonMocks {
     public static final Server SERVER = mock(Server.class);
     public static final long SERVER_ID = 22222222;
 
+    private static long uniqueIds = 1;
+
     public CommonMocks() {
         when(USER.getId()).thenReturn(USER_ID);
         when(USER.getNicknameMentionTag()).thenReturn("<"+USER_ID+">");
@@ -34,16 +40,19 @@ public class CommonMocks {
     }
 
 
-    public static Message genMsg(String content, ServerTextChannel... taggedChannels) {
-        return genMsg(content, Arrays.asList(), Arrays.asList(taggedChannels));
-    }
+    public static Message genMsg(String content, Nameable...mentioned) {
+        List<User> taggedUsers = new ArrayList<User>();
+        List<ServerTextChannel> taggedChannels = new ArrayList<ServerTextChannel>();
 
-    public static Message genMsg(String content, User... taggedUsers) {
-        return genMsg(content, Arrays.asList(taggedUsers), Arrays.asList());
-    }
+        for(Nameable de : mentioned) {
+            if(de instanceof ServerTextChannel) {
+                taggedChannels.add((ServerTextChannel) de);
+            } else if (de instanceof User) {
+                taggedUsers.add((User) de);
+            }
+        }
 
-    public static Message genMsg(String content) {
-        return genMsg(content, Arrays.asList(), Arrays.asList());
+       return genMsg(content, taggedUsers, taggedChannels);
     }
 
     public static Message genMsg(String content, List<User> taggedUsers, List<ServerTextChannel> taggedChannels) {
@@ -63,6 +72,8 @@ public class CommonMocks {
         User u = mock(User.class);
         when(u.getName()).thenReturn(username);
         when(u.getMentionTag()).thenReturn("<"+username+">");
+        when(u.getId()).thenReturn(uniqueIds++);
+        when(SERVER.getMembersByDisplayNameIgnoreCase(username)).thenReturn(Arrays.asList(u));
         return u;
     }
 }

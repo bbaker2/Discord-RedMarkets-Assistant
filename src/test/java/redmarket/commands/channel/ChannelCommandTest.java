@@ -1,8 +1,14 @@
 package redmarket.commands.channel;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,8 +23,10 @@ import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.ServerChannelBuilder;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.ServerTextChannelBuilder;
+import org.javacord.api.entity.channel.ServerTextChannelUpdater;
 import org.javacord.api.entity.channel.ServerVoiceChannel;
 import org.javacord.api.entity.channel.ServerVoiceChannelBuilder;
+import org.javacord.api.entity.channel.ServerVoiceChannelUpdater;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.permission.Permissions;
 import org.javacord.api.entity.permission.Role;
@@ -42,6 +50,8 @@ class ChannelCommandTest extends CommonMocks {
     private ChannelCommand cmd = null;
     private ServerTextChannel textChannel;
     private ServerVoiceChannel voiceChannel;
+    private ServerTextChannelUpdater stcu;
+    private ServerVoiceChannelUpdater svcu;
 
     private static final String CATEGORY = "test";
 
@@ -67,14 +77,20 @@ class ChannelCommandTest extends CommonMocks {
 
         cmd = new ChannelCommand(api, CATEGORY, storage);
 
+        // Text Channel Setup
+        stcu = mock(ServerTextChannelUpdater.class);
         textChannel = mock(ServerTextChannel.class);
         when(textChannel.getName()).thenReturn("hello-world");
         when(textChannel.getId()).thenReturn(5l);
         when(textChannel.getMentionTag()).thenReturn("<5:hello-world>");
+        when(textChannel.createUpdater()).thenReturn(stcu);
 
+        // Voice Channel Setup
+        svcu = mock(ServerVoiceChannelUpdater.class);
         voiceChannel = mock(ServerVoiceChannel.class);
         when(voiceChannel.getName()).thenReturn("hello-world");
         when(voiceChannel.getId()).thenReturn(6L);
+        when(voiceChannel.createUpdater()).thenReturn(svcu);
 
     }
 
@@ -238,8 +254,16 @@ class ChannelCommandTest extends CommonMocks {
         User playerB = mockUser("jill");
 
         // We are adding one user via nick name an one
-        String msg = String.format("!c add %s %s", textChannel.getMentionTag(), playerA.getName(), playerB.getMentionTag());
-        String actual = cmd.onChannel(genMsg(msg, playerB));
+        String msg = String.format("!c add %s %s %s", textChannel.getMentionTag(), playerA.getName(), playerB.getMentionTag());
+        String actual = cmd.onChannel(genMsg(msg, playerB, textChannel));
+        String expected = String.format(ChannelCommand.MSG_USR_ADDED, String.join(",", playerA.getMentionTag(), playerB.getMentionTag()), textChannel.getMentionTag());
+        assertEquals(expected, actual, "Make sure the correct add user success message is returned");
+
+        verify(stcu).addPermissionOverwrite(argThat(u -> u.getId() == playerA.getId()), any());
+        verify(stcu).addPermissionOverwrite(argThat(u -> u.getId() == playerB.getId()), any());
+
+        verify(svcu).addPermissionOverwrite(argThat(u -> u.getId() == playerA.getId()), any());
+        verify(svcu).addPermissionOverwrite(argThat(u -> u.getId() == playerB.getId()), any());
     }
 
     @Test
@@ -269,7 +293,7 @@ class ChannelCommandTest extends CommonMocks {
         String dneUser = "dns";
         String msg = String.format("!c add %s %s", textChannel.getMentionTag(), dneUser);
         String actual = cmd.onChannel(genMsg(msg));
-        String expected = String.format(ChannelCommand.MSG_USER_NOT_FOUND, USER.getMentionTag(), dneUser);
+        String expected = String.format(ChannelCommand.MSG_USER_NOT_FOUND, dneUser);
 
         assertEquals(expected, actual, "Make sure the correct error message was returned when naming a user who does not exist");
         // Make sure we do not attempt to add users anyways
