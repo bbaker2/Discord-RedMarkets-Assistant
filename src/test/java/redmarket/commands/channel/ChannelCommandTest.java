@@ -1,14 +1,9 @@
 package redmarket.commands.channel;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static com.bbaker.discord.redmarket.commands.channel.ChannelCommand.DELIMITER;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -253,10 +248,10 @@ class ChannelCommandTest extends CommonMocks {
         User playerA = mockUser("jack");
         User playerB = mockUser("jill");
 
-        // We are adding one user via nick name an one
+        // We are adding one user via nick name an one with the tag
         String msg = String.format("!c add %s %s %s", textChannel.getMentionTag(), playerA.getName(), playerB.getMentionTag());
         String actual = cmd.onChannel(genMsg(msg, playerB, textChannel));
-        String expected = String.format(ChannelCommand.MSG_USR_ADDED, String.join(",", playerA.getMentionTag(), playerB.getMentionTag()), textChannel.getMentionTag());
+        String expected = String.format(ChannelCommand.MSG_USR_ADDED, String.join(DELIMITER, playerA.getMentionTag(), playerB.getMentionTag()), textChannel.getMentionTag());
         assertEquals(expected, actual, "Make sure the correct add user success message is returned");
 
         verify(stcu).addPermissionOverwrite(argThat(u -> u.getId() == playerA.getId()), any());
@@ -299,6 +294,31 @@ class ChannelCommandTest extends CommonMocks {
         // Make sure we do not attempt to add users anyways
         verify(textChannel, never()).createUpdater();
         verify(voiceChannel, never()).createUpdater();
+    }
+
+    @Test
+    void testRemoveUsers() {
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel, voiceChannel));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID));
+        when(storage.getOwner(voiceChannel.getId())).thenReturn(Optional.of(USER_ID));
+
+        User pride = mockUser("pride");
+        User lust = mockUser("lust");
+        User wrath = mockUser("wrath");
+
+        String msg = String.format("!c remove %s %s %s", textChannel.getMentionTag(), pride.getMentionTag(), lust.getName());
+        String actual = cmd.onChannel(genMsg(msg, textChannel, pride, lust));
+        String expected = String.format(ChannelCommand.MSG_USR_REMOVED, String.join(DELIMITER, lust.getMentionTag(), pride.getMentionTag()), textChannel.getMentionTag());
+        assertEquals(expected, actual, "Confirm the success message when removing users via name and tag");
+
+        verify(stcu).removePermissionOverwrite(argThat(u -> u.getId() == pride.getId()));
+        verify(stcu).removePermissionOverwrite(argThat(u -> u.getId() == lust.getId()));
+        verify(stcu, never()).removePermissionOverwrite(argThat(u -> u.getId() == wrath.getId()));
+
+        verify(svcu).removePermissionOverwrite(argThat(u -> u.getId() == pride.getId()));
+        verify(svcu).removePermissionOverwrite(argThat(u -> u.getId() == lust.getId()));
+        verify(svcu, never()).removePermissionOverwrite(argThat(u -> u.getId() == wrath.getId()));
+
     }
 
     private <T extends ServerChannel> void detailedMockAndVerify(ServerChannelBuilder scb,  String name, long channelId, T serverChannel, CompletableFuture<T> future) {

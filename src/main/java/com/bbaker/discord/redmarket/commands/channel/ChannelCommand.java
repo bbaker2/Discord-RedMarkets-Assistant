@@ -29,6 +29,7 @@ import de.btobastian.sdcf4j.CommandExecutor;
 
 public class ChannelCommand implements CommandExecutor, StandardCommand {
 
+    public static final String MSG_USR_REMOVED = "User(s) %s removed from `%s`";
     public static final String MSG_USR_ADDED = "User(s) %s added to `%s`";
     public static final String MSG_USER_NOT_FOUND = "Unable to find user `%s`. No action taken.";
     public static final String MSG_NO_OWNER = "Unable to determine the ownerd of `%s`. No changes made";
@@ -38,6 +39,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
     public static final String MSG_NOT_OWNER = "You are not the owner of %s. No changes made";
     public static final String MSG_CHANNEL_DELETED = "%s: Channels `%s` were deleted";
     public static final String MSG_CHANNEL_CREATED = "Channel `%s` created.";
+    public static final String DELIMITER = ", ";
 
     private DiscordApi api = null;
     private Permissions playerPerms = null;
@@ -141,7 +143,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
         }
 
         Set<String> userNames = toAdd.stream().map(u -> u.getMentionTag()).collect(Collectors.toSet());
-        return String.format(MSG_USR_ADDED, String.join(",", userNames), channel);
+        return String.format(MSG_USR_ADDED, String.join(DELIMITER, userNames), channel);
     }
 
     private String removeUser(List<String> args, User creator, List<ServerTextChannel> mentioned, List<User> mentionedUsers, Server server) throws CommandException {
@@ -169,8 +171,11 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
             scu.update();
         }
 
-        Set<String> userNames = toAdd.stream().map(u -> u.getMentionTag()).collect(Collectors.toSet());
-        return String.format("User(s) %s removed from `%s`", String.join(",", userNames), channel);
+        Set<String> userNames = toAdd.stream()
+                .sorted((a,b)-> a.getName().compareTo(b.getName()))
+                .map(u -> u.getMentionTag())
+                .collect(Collectors.toSet());
+        return String.format(MSG_USR_REMOVED, String.join(DELIMITER, userNames), channel);
     }
 
     private List<User> retrieveUsers(List<String> args, List<User> taggedUsers, Server server) throws CommandException {
