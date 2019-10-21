@@ -190,7 +190,7 @@ class ChannelCommandTest extends CommonMocks {
 
         String actual = cmd.onChannel(genMsg("!c delete " + textChannel.getName()));
         assertEquals(
-                String.format(ChannelCommand.MSG_NOT_OWNER, USER.getNicknameMentionTag(), textChannel.getName()),
+                String.format(ChannelCommand.MSG_NOT_OWNER, textChannel.getName()),
                 actual,
                 "Make sure an error is returned when the non-owner tries to delete a channel");
         verify(storage, never()).unregisterChannel(anyLong());
@@ -204,7 +204,7 @@ class ChannelCommandTest extends CommonMocks {
 
         String actual = cmd.onChannel(genMsg("!c delete "+textChannel.getName()));
         assertEquals(
-                String.format(ChannelCommand.MSG_NO_OWNER, USER.getNicknameMentionTag(), textChannel.getName()),
+                String.format(ChannelCommand.MSG_NO_OWNER, textChannel.getName()),
                 actual,
                 "Make sure we short circuit when we cannot find the owener in the DB");
         verify(storage, never()).unregisterChannel(anyLong());
@@ -273,7 +273,7 @@ class ChannelCommandTest extends CommonMocks {
         String msg = String.format("!c add %s %s", textChannel.getName(), bob.getName());
         String actual = cmd.onChannel(genMsg(msg, bob));
         assertEquals(
-                String.format(ChannelCommand.MSG_NOT_OWNER, USER.getNicknameMentionTag(), textChannel.getName()),
+                String.format(ChannelCommand.MSG_NOT_OWNER, textChannel.getName()),
                 actual,
                 "Make sure we short circuit when we cannot find the owener in the DB while adding users");
 
@@ -319,6 +319,39 @@ class ChannelCommandTest extends CommonMocks {
         verify(svcu).removePermissionOverwrite(argThat(u -> u.getId() == lust.getId()));
         verify(svcu, never()).removePermissionOverwrite(argThat(u -> u.getId() == wrath.getId()));
 
+    }
+
+    @Test
+    void testRemoveUserNotOwner() {
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID+1)); // Make sure the user id DOES NOT match the message user
+
+        User joe = mockUser("joe");
+
+        String msg = String.format("!c remove %s %s", textChannel.getName(), joe.getName());
+        String actual = cmd.onChannel(genMsg(msg, textChannel, joe));
+        String expected = String.format(ChannelCommand.MSG_NOT_OWNER, textChannel.getName());
+        assertEquals(expected, actual, "You cannot remove users if you are not the owner");
+
+        verify(stcu, never()).removePermissionOverwrite(any());
+        verify(svcu, never()).removePermissionOverwrite(any());
+    }
+
+    @Test
+    void testRemoveUsersNotFound() {
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel));
+        when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID));
+
+        User adam = mockUser("adam");
+        String dneUser = "eve";
+
+        String msg = String.format("!c remove %s %s %s", textChannel.getName(), adam.getName(), dneUser);
+        String actual = cmd.onChannel(genMsg(msg, adam));
+        String expected = String.format(ChannelCommand.MSG_USER_NOT_FOUND, dneUser);
+        assertEquals(expected, actual, "Make sure we do not try to remove users who are not found");
+
+        verify(stcu, never()).removePermissionOverwrite(any());
+        verify(svcu, never()).removePermissionOverwrite(any());
     }
 
     private <T extends ServerChannel> void detailedMockAndVerify(ServerChannelBuilder scb,  String name, long channelId, T serverChannel, CompletableFuture<T> future) {

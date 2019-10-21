@@ -36,7 +36,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
     public static final String MSG_DUPLICATE_CHANNEL = "Channels for `%s` already exists. No changes made.";
     public static final String MSG_BAD_CHAN_NAME = "Channel name can only contain alpha-numeric, underscores, and dashes";
     public static final String MSG_CHANNEL_NOT_FOUND = "%s: No channels with the name `%s` was found. No changes made";
-    public static final String MSG_NOT_OWNER = "You are not the owner of %s. No changes made";
+    public static final String MSG_NOT_OWNER = "You are not the owner of `%s`. No changes made";
     public static final String MSG_CHANNEL_DELETED = "%s: Channels `%s` were deleted";
     public static final String MSG_CHANNEL_CREATED = "Channel `%s` created.";
     public static final String DELIMITER = ", ";
@@ -245,12 +245,12 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
                 Optional<Long> realOwner = database.getOwner(sc.getId());
                 if(realOwner.isPresent()) {
                     if(realOwner.get() != owner.getId()) {
-                        throw new CommandException(MSG_NOT_OWNER, owner.getNicknameMentionTag(), channelName);
+                        throw new CommandException(MSG_NOT_OWNER, channelName);
                     } else {
                         found.add(sc);
                     }
                 } else {
-                    throw new CommandException(MSG_NO_OWNER, owner.getNicknameMentionTag(), channelName);
+                    throw new CommandException(MSG_NO_OWNER, channelName);
                 }
             }
         }
