@@ -1,6 +1,6 @@
 package redmarket.commands.channel;
 
-import static com.bbaker.discord.redmarket.commands.channel.ChannelCommand.DELIMITER;
+import static com.bbaker.discord.redmarket.commands.channel.ChannelCommand.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -94,13 +94,13 @@ class ChannelCommandTest extends CommonMocks {
         String actual = null;
 
         actual = cmd.onChannel(genMsg("!c create !!!!!helloWorld"));
-        assertEquals(ChannelCommand.MSG_BAD_CHAN_NAME, actual);
+        assertEquals(expected(MSG_BAD_CHAN_NAME), actual);
 
         actual = cmd.onChannel(genMsg("!c create hello#world"));
-        assertEquals(ChannelCommand.MSG_BAD_CHAN_NAME, actual);
+        assertEquals(expected(MSG_BAD_CHAN_NAME), actual);
 
         actual = cmd.onChannel(genMsg("!c create \\\\hello"));
-        assertEquals(ChannelCommand.MSG_BAD_CHAN_NAME, actual);
+        assertEquals(expected(MSG_BAD_CHAN_NAME), actual);
 
         verify(SERVER, never()).createTextChannelBuilder();
         verify(SERVER, never()).createVoiceChannelBuilder();
@@ -112,7 +112,8 @@ class ChannelCommandTest extends CommonMocks {
          when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel));
 
          String actual = cmd.onChannel(genMsg("!c create hello-world"));
-         assertEquals(String.format(ChannelCommand.MSG_DUPLICATE_CHANNEL, "hello-world"), actual);
+         String expected = expected(MSG_DUPLICATE_CHANNEL, "hello-world");
+         assertEquals(expected, actual);
     }
 
     @Test
@@ -138,10 +139,11 @@ class ChannelCommandTest extends CommonMocks {
         when(USER.getRoles(SERVER)).thenReturn(Arrays.asList(gmRole)); // the user has the GM role for this test
 
         String actual = cmd.onChannel(genMsg("!c create hello-world"));
+        String expected = expected(MSG_CHANNEL_CREATED, "hello-world");
 
         verify(storage).registerChannel(eq(111111l), eq(USER_ID), any());
         verify(storage).registerChannel(eq(222222l), eq(USER_ID), any());
-        assertEquals(String.format(cmd.MSG_CHANNEL_CREATED, "hello-world"), actual, "Display the success message for the text and voice channel to be created");
+        assertEquals(expected, actual, "Display the success message for the text and voice channel to be created");
     }
 
     @Test
@@ -173,11 +175,8 @@ class ChannelCommandTest extends CommonMocks {
         when(storage.getOwner(voiceChannel.getId())).thenReturn(Optional.of(USER_ID));
 
         String actual = cmd.onChannel(msg);
-
-        assertEquals(
-                String.format(ChannelCommand.MSG_CHANNEL_DELETED, USER.getNicknameMentionTag(), "hello-world"),
-                actual,
-                "Make sure the correct success message was returned");
+        String expected = expected(MSG_CHANNEL_DELETED, "hello-world");
+        assertEquals( expected, actual, "Make sure the correct success message was returned");
         verify(storage).unregisterChannel(5l);
         verify(storage).unregisterChannel(6l);
 
@@ -189,10 +188,8 @@ class ChannelCommandTest extends CommonMocks {
         when(storage.getOwner(textChannel.getId())).thenReturn(Optional.of(USER_ID+1)); // make sure you return a user ID other than the one who sent the message
 
         String actual = cmd.onChannel(genMsg("!c delete " + textChannel.getName()));
-        assertEquals(
-                String.format(ChannelCommand.MSG_NOT_OWNER, textChannel.getName()),
-                actual,
-                "Make sure an error is returned when the non-owner tries to delete a channel");
+        String expected = expected(MSG_NOT_OWNER, textChannel.getName());
+        assertEquals( expected, actual, "Make sure an error is returned when the non-owner tries to delete a channel");
         verify(storage, never()).unregisterChannel(anyLong());
 
     }
@@ -203,10 +200,8 @@ class ChannelCommandTest extends CommonMocks {
         when(storage.getOwner(textChannel.getId())).thenReturn(Optional.empty());
 
         String actual = cmd.onChannel(genMsg("!c delete "+textChannel.getName()));
-        assertEquals(
-                String.format(ChannelCommand.MSG_NO_OWNER, textChannel.getName()),
-                actual,
-                "Make sure we short circuit when we cannot find the owener in the DB");
+        String expected = expected(MSG_NO_OWNER, textChannel.getName());
+        assertEquals(expected, actual, "Make sure we short circuit when we cannot find the owener in the DB");
         verify(storage, never()).unregisterChannel(anyLong());
     }
 
@@ -215,10 +210,8 @@ class ChannelCommandTest extends CommonMocks {
         when(channelCategory.getChannels()).thenReturn(Arrays.asList(voiceChannel));
 
         String actual = cmd.onChannel(genMsg("!c delete hello-ward"));
-        assertEquals(
-                String.format(ChannelCommand.MSG_CHANNEL_NOT_FOUND, USER.getNicknameMentionTag(), "hello-ward"),
-                actual,
-                "Ward != World. So no matching channels should have been found");
+        String expected = expected(MSG_CHANNEL_NOT_FOUND, "hello-ward");
+        assertEquals(expected, actual, "Ward != World. So no matching channels should have been found");
         verify(storage, never()).getOwner(anyLong());
         verify(storage, never()).unregisterChannel(anyLong());
     }
@@ -230,10 +223,8 @@ class ChannelCommandTest extends CommonMocks {
         when(storage.getOwner(voiceChannel.getId())).thenReturn(Optional.of(USER_ID));
 
         String actual = cmd.onChannel(genMsg("!c delete "+textChannel.getMentionTag(), textChannel));
-        assertEquals(
-                String.format(ChannelCommand.MSG_CHANNEL_DELETED, USER.getNicknameMentionTag(), textChannel.getMentionTag()),
-                actual,
-                "Make sure the correct channels were found for deletion");
+        String expected = expected(MSG_CHANNEL_DELETED, textChannel.getName());
+        assertEquals(expected, actual, "Make sure the correct channels were found for deletion");
 
         verify(storage).unregisterChannel(textChannel.getId());
         verify(storage).unregisterChannel(voiceChannel.getId());
@@ -251,7 +242,7 @@ class ChannelCommandTest extends CommonMocks {
         // We are adding one user via nick name an one with the tag
         String msg = String.format("!c add %s %s %s", textChannel.getMentionTag(), playerA.getName(), playerB.getMentionTag());
         String actual = cmd.onChannel(genMsg(msg, playerB, textChannel));
-        String expected = String.format(ChannelCommand.MSG_USR_ADDED, String.join(DELIMITER, playerA.getMentionTag(), playerB.getMentionTag()), textChannel.getMentionTag());
+        String expected = expected(MSG_USR_ADDED, String.join(DELIMITER, playerA.getMentionTag(), playerB.getMentionTag()), textChannel.getMentionTag());
         assertEquals(expected, actual, "Make sure the correct add user success message is returned");
 
         verify(stcu).addPermissionOverwrite(argThat(u -> u.getId() == playerA.getId()), any());
@@ -272,10 +263,8 @@ class ChannelCommandTest extends CommonMocks {
         // We are adding one user via nick name an one
         String msg = String.format("!c add %s %s", textChannel.getName(), bob.getName());
         String actual = cmd.onChannel(genMsg(msg, bob));
-        assertEquals(
-                String.format(ChannelCommand.MSG_NOT_OWNER, textChannel.getName()),
-                actual,
-                "Make sure we short circuit when we cannot find the owener in the DB while adding users");
+        String expected = expected(MSG_NOT_OWNER, textChannel.getName());
+        assertEquals(expected, actual, "Make sure we short circuit when we cannot find the owener in the DB while adding users");
 
         // Make sure we do not attempt to add users anyways
         verify(textChannel, never()).createUpdater();
@@ -288,7 +277,7 @@ class ChannelCommandTest extends CommonMocks {
         String dneUser = "dns";
         String msg = String.format("!c add %s %s", textChannel.getMentionTag(), dneUser);
         String actual = cmd.onChannel(genMsg(msg));
-        String expected = String.format(ChannelCommand.MSG_USER_NOT_FOUND, dneUser);
+        String expected = expected(MSG_USER_NOT_FOUND, dneUser);
 
         assertEquals(expected, actual, "Make sure the correct error message was returned when naming a user who does not exist");
         // Make sure we do not attempt to add users anyways
@@ -308,7 +297,7 @@ class ChannelCommandTest extends CommonMocks {
 
         String msg = String.format("!c remove %s %s %s", textChannel.getMentionTag(), pride.getMentionTag(), lust.getName());
         String actual = cmd.onChannel(genMsg(msg, textChannel, pride, lust));
-        String expected = String.format(ChannelCommand.MSG_USR_REMOVED, String.join(DELIMITER, lust.getMentionTag(), pride.getMentionTag()), textChannel.getMentionTag());
+        String expected = expected(MSG_USR_REMOVED, String.join(DELIMITER, lust.getMentionTag(), pride.getMentionTag()), textChannel.getName());
         assertEquals(expected, actual, "Confirm the success message when removing users via name and tag");
 
         verify(stcu).removePermissionOverwrite(argThat(u -> u.getId() == pride.getId()));
@@ -330,7 +319,7 @@ class ChannelCommandTest extends CommonMocks {
 
         String msg = String.format("!c remove %s %s", textChannel.getName(), joe.getName());
         String actual = cmd.onChannel(genMsg(msg, textChannel, joe));
-        String expected = String.format(ChannelCommand.MSG_NOT_OWNER, textChannel.getName());
+        String expected = expected(MSG_NOT_OWNER, textChannel.getName());
         assertEquals(expected, actual, "You cannot remove users if you are not the owner");
 
         verify(stcu, never()).removePermissionOverwrite(any());
@@ -347,8 +336,23 @@ class ChannelCommandTest extends CommonMocks {
 
         String msg = String.format("!c remove %s %s %s", textChannel.getName(), adam.getName(), dneUser);
         String actual = cmd.onChannel(genMsg(msg, adam));
-        String expected = String.format(ChannelCommand.MSG_USER_NOT_FOUND, dneUser);
+        String expected = expected(MSG_USER_NOT_FOUND, dneUser);
         assertEquals(expected, actual, "Make sure we do not try to remove users who are not found");
+
+        verify(stcu, never()).removePermissionOverwrite(any());
+        verify(svcu, never()).removePermissionOverwrite(any());
+    }
+
+    @Test
+    void testRemoveUserChannelNotFound() {
+        when(channelCategory.getChannels()).thenReturn(Arrays.asList(textChannel, voiceChannel));
+        String dneChannel = "this-does-not-exist";
+        User mike = mockUser("mike");
+
+        String msg = String.format("!c remove %s %s", dneChannel, mike.getMentionTag());
+        String actual = cmd.onChannel(genMsg(msg, mike));
+        String expected = expected(MSG_CHANNEL_NOT_FOUND, dneChannel);
+        assertEquals(expected, actual, "Make sure the 'channel not found' error is printed correctly");
 
         verify(stcu, never()).removePermissionOverwrite(any());
         verify(svcu, never()).removePermissionOverwrite(any());
@@ -366,6 +370,10 @@ class ChannelCommandTest extends CommonMocks {
             action.accept(serverChannel);
             return future;
         });
+    }
+
+    private String expected(String template, Object... args) {
+        return USER.getMentionTag() + ": " + String.format(template, args);
     }
 
 }

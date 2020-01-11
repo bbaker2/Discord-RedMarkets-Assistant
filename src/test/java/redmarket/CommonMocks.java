@@ -35,6 +35,7 @@ public class CommonMocks {
     public CommonMocks() {
         when(USER.getId()).thenReturn(USER_ID);
         when(USER.getNicknameMentionTag()).thenReturn("<"+USER_ID+">");
+        when(USER.getMentionTag()).thenReturn("<"+USER_ID+">");
         when(CHANNEL.getId()).thenReturn(CHANNEL_ID);
         when(SERVER.getId()).thenReturn(SERVER_ID);
     }

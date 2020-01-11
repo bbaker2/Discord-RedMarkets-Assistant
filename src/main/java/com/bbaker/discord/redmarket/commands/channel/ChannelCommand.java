@@ -1,5 +1,7 @@
 package com.bbaker.discord.redmarket.commands.channel;
 
+import static java.lang.String.*;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,9 +37,9 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
     public static final String MSG_NO_OWNER = "Unable to determine the ownerd of `%s`. No changes made";
     public static final String MSG_DUPLICATE_CHANNEL = "Channels for `%s` already exists. No changes made.";
     public static final String MSG_BAD_CHAN_NAME = "Channel name can only contain alpha-numeric, underscores, and dashes";
-    public static final String MSG_CHANNEL_NOT_FOUND = "%s: No channels with the name `%s` was found. No changes made";
+    public static final String MSG_CHANNEL_NOT_FOUND = "No channels with the name `%s` was found. No changes made";
     public static final String MSG_NOT_OWNER = "You are not the owner of `%s`. No changes made";
-    public static final String MSG_CHANNEL_DELETED = "%s: Channels `%s` were deleted";
+    public static final String MSG_CHANNEL_DELETED = "Channels `%s` were deleted";
     public static final String MSG_CHANNEL_CREATED = "Channel `%s` created.";
     public static final String DELIMITER = ", ";
 
@@ -79,9 +81,22 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
 
     @Command(aliases = {"!channel", "!c"}, description = "", usage = "!lft")
     public String onChannel(Message message) {
+        String response;
+        User author = message.getUserAuthor().get();
+        try {
+            response = handleMessage(message, author);
+        } catch (CommandException ce) {
+            response = ce.getMessage();
+        } catch (Exception e) {
+            response = "Super unexpected error happened behind the scenes. No changes applied. Probably.";
+        }
+
+        return author.getMentionTag() + ": " + response;
+    }
+
+    private String handleMessage(Message message, User author) throws CommandException {
         Server server = message.getServer().get();
-        User creator = message.getUserAuthor().get();
-        boolean isGm = creator.getRoles(server).stream().anyMatch(r -> r.getName().toLowerCase().equals("gm"));
+        boolean isGm = author.getRoles(server).stream().anyMatch(r -> r.getName().toLowerCase().equals("gm"));
         if(!isGm) {
             return "Only GMs can create channels & add users for games. Try `!gm` to give yourself the GM role";
         }
@@ -95,25 +110,21 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
 
         String action = args.remove(0);
 
-        try {
-            switch (action.toLowerCase()) {
+        switch (action.toLowerCase()) {
             case "create":
             case "c":
-                return createChannel(args, creator, server);
+                return createChannel(args, author, server);
             case "delete":
             case "d":
-                return deleteChannel(args, creator, message.getMentionedChannels());
+                return deleteChannel(args, author, message.getMentionedChannels());
             case "add":
             case "a":
-                return addUser(args, creator, message.getMentionedChannels(), message.getMentionedUsers(), server);
+                return addUser(args, author, message.getMentionedChannels(), message.getMentionedUsers(), server);
             case "remove":
             case "r":
-                return removeUser(args, creator, message.getMentionedChannels(), message.getMentionedUsers(), server);
+                return removeUser(args, author, message.getMentionedChannels(), message.getMentionedUsers(), server);
             default:
-                return String.format("Unknown action `%s`. Supported actions: `create`", action);
-            }
-        } catch (CommandException e) {
-            return e.getMessage();
+                return format("Unknown action `%s`. Supported actions: `create`", action);
         }
     }
 
@@ -143,7 +154,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
         }
 
         Set<String> userNames = toAdd.stream().map(u -> u.getMentionTag()).collect(Collectors.toSet());
-        return String.format(MSG_USR_ADDED, String.join(DELIMITER, userNames), channel);
+        return format(MSG_USR_ADDED, String.join(DELIMITER, userNames), channel);
     }
 
     private String removeUser(List<String> args, User creator, List<ServerTextChannel> mentioned, List<User> mentionedUsers, Server server) throws CommandException {
@@ -155,6 +166,10 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
         String channel = pop(args);
 
         List<ServerChannel> toUpdate = retrieveChannels(channel, creator, mentioned);
+
+        if(toUpdate.isEmpty()) {
+            return format(MSG_CHANNEL_NOT_FOUND, channel);
+        }
 
         if(args.isEmpty()) {
             return "Missing users to add. Try `!channel remove <chanel_name> <user_name>...`";
@@ -175,7 +190,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
                 .sorted((a,b)-> a.getName().compareTo(b.getName()))
                 .map(u -> u.getMentionTag())
                 .collect(Collectors.toSet());
-        return String.format(MSG_USR_REMOVED, String.join(DELIMITER, userNames), channel);
+        return format(MSG_USR_REMOVED, String.join(DELIMITER, userNames), printName(toUpdate));
     }
 
     private List<User> retrieveUsers(List<String> args, List<User> taggedUsers, Server server) throws CommandException {
@@ -211,13 +226,13 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
 
         // if no messages were generated, it is safe to assume we were unsuccessful at finding a match
         if(toDelete.isEmpty()) {
-            return String.format(MSG_CHANNEL_NOT_FOUND, owner.getNicknameMentionTag(), channel);
+            return format(MSG_CHANNEL_NOT_FOUND, channel);
         } else {
             for(ServerChannel sc : toDelete) {
                 database.unregisterChannel(sc.getId()); // remove the owner from the database
                 sc.delete(); // actually delete the channel
             }
-            return String.format(MSG_CHANNEL_DELETED, owner.getNicknameMentionTag(), channel);
+            return format(MSG_CHANNEL_DELETED, printName(toDelete));
         }
     }
 
@@ -245,12 +260,12 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
                 Optional<Long> realOwner = database.getOwner(sc.getId());
                 if(realOwner.isPresent()) {
                     if(realOwner.get() != owner.getId()) {
-                        throw new CommandException(MSG_NOT_OWNER, channelName);
+                        throw new CommandException(MSG_NOT_OWNER, sc.getName());
                     } else {
                         found.add(sc);
                     }
                 } else {
-                    throw new CommandException(MSG_NO_OWNER, channelName);
+                    throw new CommandException(MSG_NO_OWNER, sc.getName());
                 }
             }
         }
@@ -279,7 +294,7 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
 
         boolean preExisting = chanCategory.getChannels().stream().anyMatch(sc -> sc.getName().equalsIgnoreCase(channel));
         if(preExisting) {
-            return String.format(MSG_DUPLICATE_CHANNEL, channel);
+            return format(MSG_DUPLICATE_CHANNEL, channel);
         }
 
         Role everyone = server.getEveryoneRole();
@@ -302,7 +317,12 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
             .create()
             .thenAccept(vc -> database.registerChannel(vc.getId(), creator.getId(), tomorrow));
 
-        return String.format(MSG_CHANNEL_CREATED, channel);
+        return format(MSG_CHANNEL_CREATED, channel);
+    }
+
+    private String printName(List<ServerChannel> channels) {
+        // We assume there is at least one entry. So I am not going to bother with length validation
+        return channels.get(0).getName();
     }
 
 }
