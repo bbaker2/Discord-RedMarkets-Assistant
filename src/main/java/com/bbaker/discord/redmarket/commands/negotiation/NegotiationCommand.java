@@ -14,14 +14,14 @@ import com.bbaker.arg.parser.exception.BadArgumentException;
 import com.bbaker.arg.parser.text.TextArgumentParser;
 import com.bbaker.discord.redmarket.SwayProcessor;
 import com.bbaker.discord.redmarket.Tracker;
+import com.bbaker.discord.redmarket.commands.StandardCommand;
 import com.bbaker.discord.redmarket.commands.roll.DiceRoller;
 import com.bbaker.discord.redmarket.commands.roll.Table;
 import com.bbaker.discord.redmarket.exceptions.BadFormatException;
 
 import de.btobastian.sdcf4j.Command;
-import de.btobastian.sdcf4j.CommandExecutor;
 
-public class NegotiationCommand implements CommandExecutor {
+public class NegotiationCommand implements StandardCommand {
 
     private static final String CRIT = "Crit";
     private static final String SUCCESS = "Success";

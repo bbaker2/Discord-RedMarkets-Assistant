@@ -27,9 +27,8 @@ import org.javacord.api.entity.user.User;
 import com.bbaker.discord.redmarket.commands.StandardCommand;
 
 import de.btobastian.sdcf4j.Command;
-import de.btobastian.sdcf4j.CommandExecutor;
 
-public class ChannelCommand implements CommandExecutor, StandardCommand {
+public class ChannelCommand implements StandardCommand {
 
     public static final String MSG_USR_REMOVED = "User(s) %s removed from `%s`";
     public static final String MSG_USR_ADDED = "User(s) %s added to `%s`";
@@ -79,7 +78,9 @@ public class ChannelCommand implements CommandExecutor, StandardCommand {
     }
 
 
-    @Command(aliases = {"!channel", "!c"}, description = "", usage = "!lft")
+    @Command(aliases = {"!channel", "!c"},
+            description = "create/delete channels. add/remove users to channels.",
+            usage = "!c (create|delete <chanel_name>) | (add|remove <channel_name> <user_name>)")
     public String onChannel(Message message) {
         String response;
         User author = message.getUserAuthor().get();

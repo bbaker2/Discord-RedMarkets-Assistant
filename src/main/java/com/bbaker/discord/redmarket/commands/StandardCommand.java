@@ -8,12 +8,14 @@ import org.javacord.api.entity.message.Message;
 
 import com.bbaker.discord.redmarket.exceptions.BadFormatException;
 
-public interface StandardCommand {
+import de.btobastian.sdcf4j.CommandExecutor;
 
-	public void startup();
-	public void shutdown();
+public interface StandardCommand extends CommandExecutor {
 
-	default int getInt(String val) throws BadFormatException {
+    default void startup() {};
+    default void shutdown() {};
+
+    default int getInt(String val) throws BadFormatException {
         try {
             return Integer.valueOf(val);
         }catch (NumberFormatException e) {
@@ -21,7 +23,7 @@ public interface StandardCommand {
         }
     }
 
-	default List<String> getArgs(Message message){
+    default List<String> getArgs(Message message){
         String args = message.getContent();
         String[] argsArray = args.split("\\s+");
         List<String> argsList = new ArrayList(Arrays.asList(argsArray));

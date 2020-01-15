@@ -2,6 +2,8 @@ package com.bbaker.discord.redmarket;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
@@ -10,6 +12,7 @@ import org.javacord.api.AccountType;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 
+import com.bbaker.discord.redmarket.commands.StandardCommand;
 import com.bbaker.discord.redmarket.commands.channel.ChannelCommand;
 import com.bbaker.discord.redmarket.commands.channel.ChannelStorageImpl;
 import com.bbaker.discord.redmarket.commands.negotiation.NegotiationCommand;
@@ -49,10 +52,18 @@ public class Launcher {
             DiscordApi api = dab.login().join();
             api.setMessageCacheSize(1, 60);
             CommandHandler ch = new JavacordHandler(api);
-            ch.registerCommand(new RedMarketCommand(ch));
-            ch.registerCommand(new NegotiationCommand(api));
-            ch.registerCommand(new RoleCommand(api));
-            ch.registerCommand(new ChannelCommand(api, props.getProperty("config.category"), new ChannelStorageImpl(dbService)));
+
+            List<StandardCommand> cmdList = Arrays.asList(
+                new RedMarketCommand(ch),
+                new NegotiationCommand(api),
+                new RoleCommand(api),
+                new ChannelCommand(api, props.getProperty("config.category"), new ChannelStorageImpl(dbService))
+            );
+
+            for(StandardCommand sd : cmdList) {
+                sd.startup();
+                ch.registerCommand(sd);
+            }
         } catch (CancellationException | CompletionException e) {
             System.out.println("Ran into issues while connecting to discord");
             System.out.println(e.getMessage());

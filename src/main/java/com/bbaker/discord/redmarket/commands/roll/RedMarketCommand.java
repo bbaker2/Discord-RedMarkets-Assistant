@@ -6,16 +6,16 @@ import java.util.regex.Pattern;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;
 
+import com.bbaker.discord.redmarket.commands.StandardCommand;
 import com.bbaker.discord.redmarket.exceptions.BadFormatException;
 
 import de.btobastian.sdcf4j.Command;
-import de.btobastian.sdcf4j.CommandExecutor;
 import de.btobastian.sdcf4j.CommandHandler;
 
-public class RedMarketCommand implements CommandExecutor {
+public class RedMarketCommand implements StandardCommand {
     private static final String CRIT = "Crit";
     private static final String SUCCESS = "Success";
-    private static final String FAIL = "Fail";    
+    private static final String FAIL = "Fail";
 
     private final Pattern diceFaceRgx;
     private final Pattern modRgx;
@@ -167,14 +167,6 @@ public class RedMarketCommand implements CommandExecutor {
 
     }
 
-    private int getInt(String val) throws BadFormatException {
-        try {
-            return Integer.valueOf(val);
-        }catch (NumberFormatException e) {
-            throw new BadFormatException("`%s` is not an integer.", val);
-        }
-    }
-
     private String generateDamage(int black, int red, boolean isCrit) {
         String location;
         switch(red) {
@@ -205,5 +197,4 @@ public class RedMarketCommand implements CommandExecutor {
         }
         return String.format("\n**%d dmg** to the **%s**", isCrit ? black*2 : black, location);
     }
-
 }
