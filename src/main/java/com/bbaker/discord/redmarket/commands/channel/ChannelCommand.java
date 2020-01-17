@@ -70,6 +70,17 @@ public class ChannelCommand implements StandardCommand {
 
     public void startup() {
         database.createTables();
+        try {
+            long[] existingChannels = getCategory()
+                .getChannels()							// get all the channels in this category
+                .stream().mapToLong(c -> c.getId())		// grab the channel ids
+                .toArray();								// and convert them into an array
+            database.persistOnly(existingChannels);
+        } catch (CommandException e) {
+            e.printStackTrace();
+            // print errors but continue
+        }
+
     }
 
     @Override
