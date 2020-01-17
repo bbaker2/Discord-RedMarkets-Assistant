@@ -19,7 +19,7 @@ public class DatabaseServiceImpl implements DatabaseService  {
 
     public DatabaseServiceImpl(Properties p) throws SetupException {
         // provide the defaults
-    	dbProps = new Properties();
+        dbProps = new Properties();
         dbProps.put("url", 		"jdbc:h2:./discord_redmarket");
         dbProps.put("port", 	"9138");
         dbProps.put("password", "gna7");
@@ -28,12 +28,12 @@ public class DatabaseServiceImpl implements DatabaseService  {
 
         // Merge in any values who have the "db." prefix
         for(Object key : p.keySet()) {
-        	if(key instanceof String) {
-        		String strKey = (String)key;
-        		if(strKey.startsWith("db.")) {
-        			dbProps.put(strKey.substring(3), p.get(key));
-        		}
-        	}
+            if(key instanceof String) {
+                String strKey = (String)key;
+                if(strKey.startsWith("db.")) {
+                    dbProps.put(strKey.substring(3), p.get(key));
+                }
+            }
         }
 
         prefix = dbProps.getProperty("prefix");
@@ -48,13 +48,14 @@ public class DatabaseServiceImpl implements DatabaseService  {
 
         this.jdbi = Jdbi.create(dbProps.getProperty("url"), dbProps);
         this.jdbi.installPlugin(new H2DatabasePlugin());
+        this.jdbi.registerArrayType(long.class, "long");
     }
 
     /* (non-Javadoc)
-	 * @see com.bbaker.discord.redmarket.db.DatabaseService#hasTable(java.lang.String)
-	 */
+     * @see com.bbaker.discord.redmarket.db.DatabaseService#hasTable(java.lang.String)
+     */
     @Override
-	public boolean hasTable(String tableName) {
+    public boolean hasTable(String tableName) {
         String query = 	"select count(ID) "+
                         "from INFORMATION_SCHEMA.TABLES "+
                         "where TABLE_TYPE='TABLE' "+
@@ -69,18 +70,18 @@ public class DatabaseServiceImpl implements DatabaseService  {
     }
 
     /* (non-Javadoc)
-	 * @see com.bbaker.discord.redmarket.db.DatabaseService#qualifiedName(java.lang.String)
-	 */
+     * @see com.bbaker.discord.redmarket.db.DatabaseService#qualifiedName(java.lang.String)
+     */
     @Override
-	public String qualifiedName(String name) {
+    public String qualifiedName(String name) {
         return (prefix + name).toUpperCase();
     }
 
     /* (non-Javadoc)
-	 * @see com.bbaker.discord.redmarket.db.DatabaseService#query(java.lang.String, java.lang.String, java.lang.String)
-	 */
+     * @see com.bbaker.discord.redmarket.db.DatabaseService#query(java.lang.String, java.lang.String, java.lang.String)
+     */
     @Override
-	public String query(String template, String tableName, String... extraArgs) {
+    public String query(String template, String tableName, String... extraArgs) {
         if(extraArgs.length > 0) {
             Object[] args = new Object[1+extraArgs.length];
             args[0] = qualifiedName(tableName);
@@ -91,14 +92,14 @@ public class DatabaseServiceImpl implements DatabaseService  {
         }
     }
 
-	@Override
-	public <X extends Exception> void useHandle(final HandleConsumer<X> callback) throws X {
-		this.jdbi.useHandle(callback);
-	}
+    @Override
+    public <X extends Exception> void useHandle(final HandleConsumer<X> callback) throws X {
+        this.jdbi.useHandle(callback);
+    }
 
-	@Override
-	public <R, X extends Exception> R withHandle(HandleCallback<R, X> callback) throws X {
-		return this.jdbi.withHandle(callback);
-	}
+    @Override
+    public <R, X extends Exception> R withHandle(HandleCallback<R, X> callback) throws X {
+        return this.jdbi.withHandle(callback);
+    }
 
 }

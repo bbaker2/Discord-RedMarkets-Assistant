@@ -67,4 +67,15 @@ public class ChannelStorageImpl implements ChannelStorage {
         db.useHandle(h -> h.createUpdate(q).bind("channelId", channelId).execute());
     }
 
+    @Override
+    public void persistOnly(long[] channels) {
+        // no need to do anythign if we are given an empty array
+        if(channels.length == 0) {
+            return;
+        }
+        String q = db.query("DELETE FROM %s WHERE CHANNEL_ID NOT IN (:channelIds)", TABLE_CHANNEL);
+        db.useHandle(h -> h.createUpdate(q).bind("channelIds", channels).execute());
+    }
+
+
 }
