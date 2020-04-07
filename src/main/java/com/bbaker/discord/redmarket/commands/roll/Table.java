@@ -8,7 +8,10 @@ import org.javacord.api.entity.emoji.KnownCustomEmoji;
 import com.bbaker.discord.redmarket.exceptions.BadFormatException;
 
 public class Table {
-
+    private static final String CRIT = "`Crit`";
+    private static final String SUCCESS = "`Success`";
+    private static final String FAIL = "`Fail`";
+    private static final String DASH = ":heavy_minus_sign:";
 
     int red, black;
     long mod;
@@ -49,6 +52,25 @@ public class Table {
 
     public String getResults(DiscordApi api) {
         return getDiceFace("black", black, api) + " " + getDiceFace("red", red, api);
+    }
+
+    public String getFullResults(DiscordApi api) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getDiceFace("black", black, api)).append(" ").append(getDiceFace("red", red, api));
+
+        if(isCrit()) {
+            sb.append(" ").append(CRIT);
+        }
+
+        sb.append(" ");
+        if(isSuccess()) {
+            sb.append(SUCCESS);
+        } else {
+            sb.append(FAIL);
+        }
+
+        sb.append(" Net:").append(getNet());
+        return sb.toString();
     }
 
     private String getDiceFace(String color, int face, DiscordApi api) {
