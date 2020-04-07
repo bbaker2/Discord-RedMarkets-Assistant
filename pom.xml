@@ -44,7 +44,7 @@
   <repositories>
     <repository>
       <id>javacord-repo</id>
-      <url>http://repo.bastian-oppermann.de</url>
+      <url>https://repo.bastian-oppermann.de</url>
     </repository>
     <repository>
       <id>jitpack.io</id>
@@ -131,7 +131,14 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>3.0.0</version>
+      <version>3.2.4</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.11.1</version>
       <scope>test</scope>
     </dependency>
 
