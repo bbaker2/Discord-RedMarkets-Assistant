@@ -38,6 +38,10 @@ public class Table {
         return black - red + mod;
     }
 
+    public long getMod() {
+        return mod;
+    }
+
     public boolean isCrit() {
         return red == black;
     }

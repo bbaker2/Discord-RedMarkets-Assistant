@@ -9,7 +9,7 @@ import com.bbaker.discord.redmarket.exceptions.BadFormatException;
 public class DiceRoller {
 
     private static final Pattern diceRgx = Pattern.compile("(\\d+)?(red|r|black|b)(\\d+)?");
-    private static final Pattern modRgx = Pattern.compile("((\\+?|-?)\\d+)");
+    private static final Pattern modRgx = Pattern.compile("(\\+|\\-)?(\\d+)");
 
     private Table table = new Table();
 
@@ -19,12 +19,15 @@ public class DiceRoller {
 
     private boolean modeParser(String token) throws BadFormatException {
         Matcher m = modRgx.matcher(token);
-        if(m.find()) {
+        if(!m.matches()) {
             return false;
         }
 
         try {
-            long mod = Long.valueOf(m.group(1));
+            long mod = Long.valueOf(m.group(2));
+            if("-".contentEquals(m.group(1))) {
+                mod *= -1;
+            }
             table.setMod(mod);
         } catch(NumberFormatException nfe) {
             throw new BadFormatException(String.format("'%s' is not a integer", m.group(1)));
