@@ -39,7 +39,7 @@ public class NegotiationCommand implements StandardCommand {
         this.parser = new TextArgumentParser();
     }
 
-    @Command(aliases = {"!n", "!negotiate"}, description = "For planning stuff")
+    @Command(aliases = {"?n", "?negotiate"}, description = "For planning stuff")
     public String negotiate(DiscordApi api, Message message) {
         try {
             return evaluate(message);
@@ -74,10 +74,55 @@ public class NegotiationCommand implements StandardCommand {
             case "next":
             case "n":
                 return nextRound(channelId);
+            case "close":
+            case "c":
+                return close(args, channelId);
             default:
                 return "Unknown argument `" + cmd + "`";
         }
 
+    }
+
+    private String close(List<String> args, long channelId) throws BadFormatException {
+        Tracker tracker = storage.getTracker(channelId).get();
+
+        DiceRoller dr = new DiceRoller();
+        Iterator<String> tokens = args.iterator();
+        boolean bust = false;
+        while(tokens.hasNext()) {
+            String token = tokens.next();
+            if(dr.processToken(token)) {
+                tokens.remove();
+            } else if(token.equalsIgnoreCase("bust")){
+                bust = true;
+                tokens.remove();
+            }
+        }
+        Table table = dr.getTable();
+
+        StringBuilder sb = new StringBuilder();
+        // check if we need bust rules AND
+        // there 1 or more spaces between the client and provider
+        if(tracker.getClient() - tracker.getProvider() > 1 && bust) {
+            sb.append("Bust rules invoked. The Client accepts The Provider's price AS IS");
+            tracker.close(tracker.getClient());
+        } else {
+            sb.append(table.getFullResults(api));
+            if(table.isSuccess()){
+                // the provider moves into the client's space
+                tracker.close(tracker.getClient());
+            } else {
+                // the client moves into the provider's space
+                tracker.close(tracker.getProvider());
+            }
+        }
+
+        sb.append("\n");
+
+        sb.append("Final price: ").append(tracker.getProviderTrack());
+        sb.append("\n").append(printSwayTracker(tracker));
+
+        return sb.toString();
     }
 
     private String start(List<String> args, long channelId) throws BadFormatException {
@@ -163,13 +208,19 @@ public class NegotiationCommand implements StandardCommand {
                 tracker.getProviderTrack(),
                 tracker.getClientTrack());
 
+        String swayTracker = printSwayTracker(tracker);
+        return status + "\n" + swayTracker;
+    }
+
+    private String printSwayTracker(Tracker tracker) {
         // prepare the default dashes
         String[] emojies = new String[] {DASH, DASH, DASH, DASH, DASH, DASH, DASH};
 
         // then truncate specific positions with the client and provider
         emojies[tracker.getClient()] = getDiceFace("red", tracker.getClient()+1);
         emojies[tracker.getProvider()] = getDiceFace("black", tracker.getProvider()+1);
-        return status + "\n" + String.join(" ", emojies);
+
+        return String.join(" ", emojies);
     }
 
     private String getDiceFace(String color, int face) {
