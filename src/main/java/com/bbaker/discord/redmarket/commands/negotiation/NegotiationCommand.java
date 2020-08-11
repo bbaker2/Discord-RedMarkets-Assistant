@@ -111,7 +111,7 @@ public class NegotiationCommand implements StandardCommand {
             .append("/2 rounded up equals ")
             .append(tracker.getTotalRounds()).append(" rounds");
         } else {
-            sb.append("A random number of rounds was rolled in sceret for the Providers");
+            sb.append("A random number of rounds was rolled in sceret for the Provider");
         }
 
         sb.append("\n");
