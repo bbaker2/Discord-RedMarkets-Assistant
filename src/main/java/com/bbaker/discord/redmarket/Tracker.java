@@ -18,7 +18,8 @@ public class Tracker {
         if(t.isSuccess()) {
             provider = t.isCrit() ? 2 : 1;
             secret = false;
-            rounds = (int)Math.round(t.getBlack()/2 + 0.5);
+            long leadership = t.getBlack()+t.getMod();
+            rounds = (int)Math.ceil(leadership/2.0);
         } else {
             provider = t.isCrit() ? 0 : 1;
             secret = true;
@@ -27,7 +28,7 @@ public class Tracker {
         client = 6;
         current = 1;
 
-        swayClient = 1;
+        swayClient = 0;
         swayProvider = 0;
     }
 
@@ -103,7 +104,7 @@ public class Tracker {
         client = max(client, 1); // the client cannot be less than position 1
 
         current++;
-        swayClient = 1; // client always start with one successful sway
+        swayClient = 0;
         swayProvider = 0;
 
     }
