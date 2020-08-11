@@ -109,4 +109,9 @@ public class Tracker {
 
     }
 
+    public void close(int finalPrice) {
+        provider = finalPrice;
+        client = finalPrice;
+    }
+
 }
