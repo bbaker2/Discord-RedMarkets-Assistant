@@ -8,6 +8,8 @@ import java.util.Properties;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.AccountType;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
@@ -15,7 +17,6 @@ import org.javacord.api.DiscordApiBuilder;
 import com.bbaker.discord.redmarket.commands.StandardCommand;
 import com.bbaker.discord.redmarket.commands.channel.ChannelCommand;
 import com.bbaker.discord.redmarket.commands.channel.ChannelStorageImpl;
-import com.bbaker.discord.redmarket.commands.negotiation.NegotiationCommand;
 import com.bbaker.discord.redmarket.commands.role.RoleCommand;
 import com.bbaker.discord.redmarket.commands.roll.RedMarketCommand;
 import com.bbaker.discord.redmarket.db.DatabaseService;
@@ -26,6 +27,8 @@ import de.btobastian.sdcf4j.CommandHandler;
 import de.btobastian.sdcf4j.handler.JavacordHandler;
 
 public class Launcher {
+
+    private static final Logger logger = LogManager.getLogger(Launcher.class);
 
     public static void main(String[] args) {
         Properties props = new Properties();;
@@ -55,7 +58,7 @@ public class Launcher {
 
             List<StandardCommand> cmdList = Arrays.asList(
                 new RedMarketCommand(ch),
-                new NegotiationCommand(api),
+//                new NegotiationCommand(api),
                 new RoleCommand(api),
                 new ChannelCommand(api, props.getProperty("config.category"), new ChannelStorageImpl(dbService))
             );
@@ -65,14 +68,12 @@ public class Launcher {
                 ch.registerCommand(sd);
             }
         } catch (CancellationException | CompletionException e) {
-            System.out.println("Ran into issues while connecting to discord");
-            System.out.println(e.getMessage());
+            logger.error("Ran into issues while connecting to discord", e);
             System.exit(1);
         } catch (SetupException e) {
-            System.out.println("Ran into an issue while starting up the database");
-            System.out.println(e.getMessage());
+            logger.error("Ran into an issue while starting up the database", e);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
             System.exit(1);
         }
     }

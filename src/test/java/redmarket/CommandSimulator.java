@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.emoji.KnownCustomEmoji;
 import org.javacord.api.entity.message.Message;
@@ -19,7 +21,7 @@ import com.bbaker.discord.redmarket.commands.negotiation.NegotiationStorage;
 
 public class CommandSimulator extends CommonMocks {
 
-
+     private static final Logger logger = LogManager.getLogger(CommandSimulator.class);
 
     public static void main(String...args) {
         DiscordApi api = mockApi();
@@ -30,7 +32,7 @@ public class CommandSimulator extends CommonMocks {
         for(String val = ""; !"exit".equalsIgnoreCase(val); val = sc.nextLine()) {
             Message msg = genMsg("!n " + val);
             String response = cmd.negotiate(api, msg);
-            System.out.println(response);
+            logger.error(response);
         }
         System.out.println("Exiting");
 
