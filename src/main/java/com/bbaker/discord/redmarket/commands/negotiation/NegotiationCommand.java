@@ -184,7 +184,7 @@ public class NegotiationCommand implements StandardCommand {
 
     private String nextRound(long channelId) {
         Tracker tracker = storage.getTracker(channelId).get();
-        if(tracker.getCurrentRound() < tracker.getTotalRounds()) {
+        if(tracker.getCurrentRound() <= tracker.getTotalRounds()) {
             tracker.next();
             storage.storeTracker(channelId, tracker);
         }
