@@ -169,6 +169,10 @@ public class NegotiationCommand implements StandardCommand {
     private String sway(List<String> args, long channelId) throws BadFormatException {
         Tracker tracker = storage.getTracker(channelId).get();
 
+        if(tracker.getCurrentRound() > tracker.getTotalRounds()) {
+            return "Negotiations are over. Start closing phase.";
+        }
+
         try {
             parser.processArguments(args.iterator(), new SwayProcessor(tracker));
         } catch (BadArgumentException e) {
@@ -201,12 +205,22 @@ public class NegotiationCommand implements StandardCommand {
     }
 
     private String appendStatus(Tracker tracker) {
-        String round = tracker.isSecret() ? "[SECRET]" : String.valueOf(tracker.getTotalRounds());
-        String status = String.format("Round %d of %s. Provider: `%s`; Client: `%s`",
-                tracker.getCurrentRound(),
-                round,
-                tracker.getProviderTrack(),
-                tracker.getClientTrack());
+        String status;
+        // If we are done....
+        if(tracker.getCurrentRound() > tracker.getTotalRounds()) {
+            status = String.format("Finished all %d round(s). Provider: `%s`; Client: `%s`",
+                    tracker.getTotalRounds(),
+                    tracker.getProviderTrack(),
+                    tracker.getClientTrack());
+        // otherwise print the in-progress status
+        } else {
+            String round = tracker.isSecret() ? "[SECRET]" : String.valueOf(tracker.getTotalRounds());
+            status = String.format("Round %d of %s. Provider: `%s`; Client: `%s`",
+                    tracker.getCurrentRound(),
+                    round,
+                    tracker.getProviderTrack(),
+                    tracker.getClientTrack());
+        }
 
         String swayTracker = printSwayTracker(tracker);
         return status + "\n" + swayTracker;
