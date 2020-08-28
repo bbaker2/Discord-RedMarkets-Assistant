@@ -1,4 +1,4 @@
-package com.bbaker.discord.redmarket;
+package com.bbaker.discord.redmarket.commands.negotiation;
 
 import static java.lang.Math.*;
 
@@ -13,6 +13,10 @@ public class Tracker {
     private String[] tracker = new String[] {
         "As A Favor", "Buyer's Market", "At Value", "Labor", "Hazard Pay", "100% Mark-Up", "Expenses"
     };
+
+    public Tracker(int provider, int client, int rounds, int current, int swayClient, int swayProvider, boolean secret) {
+
+    }
 
     public Tracker(Table t) {
         if(t.isSuccess()) {
@@ -113,5 +117,6 @@ public class Tracker {
         provider = finalPrice;
         client = finalPrice;
     }
+
 
 }

@@ -13,8 +13,6 @@ import org.javacord.api.entity.message.Message;
 
 import com.bbaker.arg.parser.exception.BadArgumentException;
 import com.bbaker.arg.parser.text.TextArgumentParser;
-import com.bbaker.discord.redmarket.SwayProcessor;
-import com.bbaker.discord.redmarket.Tracker;
 import com.bbaker.discord.redmarket.commands.StandardCommand;
 import com.bbaker.discord.redmarket.commands.roll.DiceRoller;
 import com.bbaker.discord.redmarket.commands.roll.Table;

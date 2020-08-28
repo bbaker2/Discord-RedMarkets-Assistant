@@ -16,9 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestTemplate;
 import org.mockito.exceptions.verification.SmartNullPointerException;
 
-import com.bbaker.discord.redmarket.Tracker;
 import com.bbaker.discord.redmarket.commands.negotiation.NegotiationCommand;
 import com.bbaker.discord.redmarket.commands.negotiation.NegotiationStorage;
+import com.bbaker.discord.redmarket.commands.negotiation.Tracker;
 
 import redmarket.CommonMocks;
 

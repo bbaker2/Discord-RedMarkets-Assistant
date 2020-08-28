@@ -1,9 +1,11 @@
-package com.bbaker.discord.redmarket;
+package com.bbaker.discord.redmarket.commands.negotiation;
 
 import java.util.OptionalInt;
 
 import com.bbaker.arg.parser.exception.BadArgumentException;
 import com.bbaker.arg.parser.text.TextArgumentProcessor;
+import com.bbaker.discord.redmarket.commands.channel.Sway;
+
 import static com.bbaker.arg.parser.text.TextArgumentEvaluator.getTotal;
 
 public class SwayProcessor implements TextArgumentProcessor {
