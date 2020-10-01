@@ -92,7 +92,6 @@ class NegotiationStorageTest {
         assertEquals(second.getSwayClient(),        actual.getSwayClient());
         assertEquals(second.getSwayProvider(),      actual.getSwayProvider());
 
-
     }
 
 }
