@@ -15,9 +15,9 @@ import org.javacord.api.entity.emoji.KnownCustomEmoji;
 import org.javacord.api.entity.message.Message;
 import org.mockito.Mockito;
 
-import com.bbaker.discord.redmarket.Tracker;
 import com.bbaker.discord.redmarket.commands.negotiation.NegotiationCommand;
 import com.bbaker.discord.redmarket.commands.negotiation.NegotiationStorage;
+import com.bbaker.discord.redmarket.commands.negotiation.Tracker;
 
 public class CommandSimulator extends CommonMocks {
 
@@ -51,6 +51,12 @@ public class CommandSimulator extends CommonMocks {
             @Override
             public Optional<Tracker> getTracker(long channelId) {
                 return db.containsKey(channelId) ? Optional.of(db.get(channelId)) : Optional.empty();
+            }
+
+            @Override
+            public void createTable() {
+                // TODO Auto-generated method stub
+
             }
         };
     }
