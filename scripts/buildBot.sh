@@ -14,7 +14,7 @@ NC="\033[0m"
 RD="\033[0;31m"
 GN="\033[0;32m"
 
-JAR=discord_redmarket.jar
+JAR=discord_redmarket-jar-with-dependencies.jar
 
 # Read the user arguments to see if they wish to
 # refresh, build, and/or launch
@@ -60,7 +60,7 @@ fi
 if [ $build ]
 then
 	echo Building with Maven
-	mvn -f pom.xml clean package shade:shade
+	mvn -f pom.xml clean package
 	echo -e Copying ${GN}${JAR}${NC} to ${GN}${TRG_DIR}${NC}
 	cp target/${JAR} ${TRG_DIR}
 fi
