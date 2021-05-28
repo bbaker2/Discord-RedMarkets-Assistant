@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.user.User;
 
 import com.bbaker.discord.redmarket.commands.StandardCommand;
 import com.bbaker.discord.redmarket.exceptions.BadFormatException;
@@ -17,6 +18,7 @@ public class RedMarketCommand implements StandardCommand {
     private static final String SUCCESS = "Success";
     private static final String FAIL = "Fail";
 
+    private final Pattern diceMessageRgx;
     private final Pattern diceFaceRgx;
     private final Pattern modRgx;
 
@@ -24,13 +26,16 @@ public class RedMarketCommand implements StandardCommand {
 
     public RedMarketCommand(CommandHandler commandHandler) {
         this.commandHandler = commandHandler;
-        diceFaceRgx = Pattern.compile("(black|b|red|r)(\\d+)");
+        diceMessageRgx = Pattern.compile("((black|b|red|r)\\d+|\\d+(black|b|red|r))");
+        diceFaceRgx = Pattern.compile("(black|b|red|r|\\d+)(black|b|red|r|\\d+)");
         modRgx = Pattern.compile("\\s((\\+?|-?)\\d+)(\\s|$)");
     }
 
     @Command(aliases = {"!r", "!roll"}, description = "Roll 2d10, finds the difference, and applys any (optional) modifiers", usage = "!roll [+n|-n]")
     public String onRoll(DiscordApi api, Message message) {
         Table table;
+        User author = message.getUserAuthor().get();
+
         try {
             long mod = getMod(message);
             table = new Table(mod);
@@ -41,7 +46,7 @@ public class RedMarketCommand implements StandardCommand {
 
         String crit = table.isCrit() ? CRIT : "";
         String success = table.isSuccess() ? SUCCESS : FAIL;
-        return String.format("%s `%s%s` Net: %d", table.getResults(api), crit, success, table.getNet());
+        return String.format("%s: %s `%s%s` Net: %d", author.getMentionTag(), table.getResults(api), crit, success, table.getNet());
     }
 
     @Command(aliases = {"!a", "!attack"}, description = "Determines hit/miss & damage. (Success == damage)", usage = "!attack [+n|-n]")
@@ -54,7 +59,7 @@ public class RedMarketCommand implements StandardCommand {
         return checkedDamage(api, message, false);
     }
 
-    @Command(aliases = {"!dmg", "!damage"}, description = "Determins how much damange goes where. No modifiers.", usage = "!dmg")
+    @Command(aliases = {"!dmg", "!damage"}, description = "Determines how much damage goes where. No modifiers.", usage = "!dmg")
     public String onDamange(DiscordApi api, Message message) {
         Table table = new Table();
 
@@ -150,21 +155,45 @@ public class RedMarketCommand implements StandardCommand {
     }
 
     private void updateTable(Message message, Table table) throws BadFormatException {
-        Matcher m = diceFaceRgx.matcher(message.getContent().toLowerCase());
-        while(m.find()) {
-            System.out.println(m.group(1) + "--> " + m.group(2));
-            switch(m.group(1)) {
+        Matcher m = diceMessageRgx.matcher(message.getContent().toLowerCase());
+        if(m.find()){
+            String[] dice = extractDiceFromMessage(m.group(1));
+            switch(dice[0]) {
                 case "r":
                 case "red":
-                    table.setRed(getInt(m.group(2)));
+                    table.setRed(getInt(dice[1]));
                     break;
                 case "b":
                 case "black":
-                    table.setBlack(getInt(m.group(2)));
+                    table.setBlack(getInt(dice[1]));
                     break;
             }
         }
+    }
 
+    private String[] extractDiceFromMessage(String diceMessage) {
+        Matcher matcher = diceFaceRgx.matcher(diceMessage);
+        String colour = null;
+        String face = null;
+
+        if(matcher.find()){
+            switch(matcher.group(1)) {
+                case "r":
+                case "red":
+                case "b":
+                case "black":
+                    colour = matcher.group(1);
+                    face = matcher.group(2);
+                    break;
+                default:
+                    colour = matcher.group(2);
+                    face = matcher.group(1);
+            }
+
+            System.out.println(colour + "--> " + face);
+        }
+        
+        return new String[] {colour, face};
     }
 
     private String generateDamage(int black, int red, boolean isCrit) {
