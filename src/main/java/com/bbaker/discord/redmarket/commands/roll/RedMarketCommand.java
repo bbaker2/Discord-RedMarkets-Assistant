@@ -189,8 +189,6 @@ public class RedMarketCommand implements StandardCommand {
                     colour = matcher.group(2);
                     face = matcher.group(1);
             }
-
-            System.out.println(colour + "--> " + face);
         }
         
         return new String[] {colour, face};
