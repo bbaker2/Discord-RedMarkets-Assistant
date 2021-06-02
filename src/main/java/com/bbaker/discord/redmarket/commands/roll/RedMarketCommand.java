@@ -144,7 +144,6 @@ public class RedMarketCommand implements StandardCommand {
         Matcher m = modRgx.matcher(message.getContent());
         if(m.find()) {
             try {
-                System.out.println("mod: " + m.group(1));
                 return Long.valueOf(m.group(1));
             } catch(NumberFormatException nfe) {
                 throw new BadFormatException(String.format("'%s' is not a integer", m.group(1)));
@@ -190,7 +189,7 @@ public class RedMarketCommand implements StandardCommand {
                     face = matcher.group(1);
             }
         }
-        
+
         return new String[] {colour, face};
     }
 
