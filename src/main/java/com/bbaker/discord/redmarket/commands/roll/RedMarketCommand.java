@@ -1,7 +1,6 @@
 package com.bbaker.discord.redmarket.commands.roll;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Iterator;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;
@@ -18,34 +17,25 @@ public class RedMarketCommand implements StandardCommand {
     private static final String SUCCESS = "Success";
     private static final String FAIL = "Fail";
 
-    private final Pattern diceMessageRgx;
-    private final Pattern diceFaceRgx;
-    private final Pattern modRgx;
-
     private final CommandHandler commandHandler;
 
     public RedMarketCommand(CommandHandler commandHandler) {
         this.commandHandler = commandHandler;
-        diceMessageRgx = Pattern.compile("((black|b|red|r)\\d+|\\d+(black|b|red|r))");
-        diceFaceRgx = Pattern.compile("(black|b|red|r|\\d+)(black|b|red|r|\\d+)");
-        modRgx = Pattern.compile("\\s((\\+?|-?)\\d+)(\\s|$)");
     }
 
     @Command(aliases = {"!r", "!roll"}, description = "Roll 2d10, finds the difference, and applys any (optional) modifiers", usage = "!roll [+n|-n]")
     public String onRoll(DiscordApi api, Message message) {
-        Table table;
-        User author = message.getUserAuthor().get();
 
+        Table table = null;
         try {
-            long mod = getMod(message);
-            table = new Table(mod);
-            updateTable(message, table);
+            table = parseTable(message);
         }catch (BadFormatException e) {
             return e.getMessage();
         }
 
         String crit = table.isCrit() ? CRIT : "";
         String success = table.isSuccess() ? SUCCESS : FAIL;
+        User author = message.getUserAuthor().get();
         return String.format("%s: %s `%s%s` Net: %d", author.getMentionTag(), table.getResults(api), crit, success, table.getNet());
     }
 
@@ -61,10 +51,10 @@ public class RedMarketCommand implements StandardCommand {
 
     @Command(aliases = {"!dmg", "!damage"}, description = "Determines how much damage goes where. No modifiers.", usage = "!dmg")
     public String onDamange(DiscordApi api, Message message) {
-        Table table = new Table();
+        Table table = null;
 
         try {
-            updateTable(message, table);
+            table = parseTable(message);
         } catch (BadFormatException e) {
             return e.getMessage();
         }
@@ -109,18 +99,26 @@ public class RedMarketCommand implements StandardCommand {
             }
         }
 
-
         sb.append("\n```");
         return sb.toString();
 
     }
 
+    private Table parseTable(Message message) throws BadFormatException {
+        DiceRoller dr = new DiceRoller();
+        Iterator<String> tokens = getArgs(message).iterator();
+        while(tokens.hasNext()) {
+            if(dr.processToken(tokens.next())) {
+                tokens.remove();
+            }
+        }
+        return dr.getTable();
+    }
+
     private String checkedDamage(DiscordApi api, Message message, Boolean dmgOnSuccess) {
         Table table;
         try {
-            long mod = getMod(message);
-            table = new Table(mod);
-            updateTable(message, table);
+            table = parseTable(message);
         }catch (BadFormatException e) {
             return e.getMessage();
         }
@@ -136,61 +134,6 @@ public class RedMarketCommand implements StandardCommand {
         }
 
         return sb.toString();
-    }
-
-
-    private long getMod(Message message) throws BadFormatException {
-
-        Matcher m = modRgx.matcher(message.getContent());
-        if(m.find()) {
-            try {
-                return Long.valueOf(m.group(1));
-            } catch(NumberFormatException nfe) {
-                throw new BadFormatException(String.format("'%s' is not a integer", m.group(1)));
-            }
-        } else {
-            return 0;
-        }
-    }
-
-    private void updateTable(Message message, Table table) throws BadFormatException {
-        Matcher m = diceMessageRgx.matcher(message.getContent().toLowerCase());
-        if(m.find()){
-            String[] dice = extractDiceFromMessage(m.group(1));
-            switch(dice[0]) {
-                case "r":
-                case "red":
-                    table.setRed(getInt(dice[1]));
-                    break;
-                case "b":
-                case "black":
-                    table.setBlack(getInt(dice[1]));
-                    break;
-            }
-        }
-    }
-
-    private String[] extractDiceFromMessage(String diceMessage) {
-        Matcher matcher = diceFaceRgx.matcher(diceMessage);
-        String colour = null;
-        String face = null;
-
-        if(matcher.find()){
-            switch(matcher.group(1)) {
-                case "r":
-                case "red":
-                case "b":
-                case "black":
-                    colour = matcher.group(1);
-                    face = matcher.group(2);
-                    break;
-                default:
-                    colour = matcher.group(2);
-                    face = matcher.group(1);
-            }
-        }
-
-        return new String[] {colour, face};
     }
 
     private String generateDamage(int black, int red, boolean isCrit) {
