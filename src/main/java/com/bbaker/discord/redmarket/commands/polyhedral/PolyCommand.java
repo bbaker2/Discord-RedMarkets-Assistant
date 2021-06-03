@@ -6,6 +6,12 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;
 
 import com.bbaker.discord.redmarket.commands.StandardCommand;
+import com.bernardomg.tabletop.dice.history.RollHistory;
+import com.bernardomg.tabletop.dice.interpreter.DiceInterpreter;
+import com.bernardomg.tabletop.dice.interpreter.DiceRoller;
+import com.bernardomg.tabletop.dice.notation.DiceNotationExpression;
+import com.bernardomg.tabletop.dice.parser.DefaultDiceParser;
+import com.bernardomg.tabletop.dice.parser.DiceParser;
 
 import de.btobastian.sdcf4j.Command;
 
@@ -17,7 +23,12 @@ public class PolyCommand implements StandardCommand {
     public String onRoll(DiscordApi api, Message message) {
         List<String> args = getArgs(message);
 
-        return "`" + String.join("  ", args) + "`";
+        DiceParser parser = new DefaultDiceParser();
+        DiceNotationExpression result = parser.parse(String.join("", args));
+
+        DiceInterpreter<RollHistory> roller = new DiceRoller();
+        RollHistory history = roller.transform(result);
+        return String.format("`%d` = %s", history.getTotalRoll(), history.toString());
     }
 
 }
