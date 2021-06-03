@@ -17,6 +17,7 @@ import org.javacord.api.DiscordApiBuilder;
 import com.bbaker.discord.redmarket.commands.StandardCommand;
 import com.bbaker.discord.redmarket.commands.channel.ChannelCommand;
 import com.bbaker.discord.redmarket.commands.channel.ChannelStorageImpl;
+import com.bbaker.discord.redmarket.commands.polyhedral.PolyCommand;
 import com.bbaker.discord.redmarket.commands.role.RoleCommand;
 import com.bbaker.discord.redmarket.commands.roll.RedMarketCommand;
 import com.bbaker.discord.redmarket.db.DatabaseService;
@@ -60,7 +61,8 @@ public class Launcher {
                 new RedMarketCommand(ch),
 //                new NegotiationCommand(api),
                 new RoleCommand(api),
-                new ChannelCommand(api, props.getProperty("config.category"), new ChannelStorageImpl(dbService))
+                new ChannelCommand(api, props.getProperty("config.category"), new ChannelStorageImpl(dbService)),
+                new PolyCommand()
             );
 
             for(StandardCommand sd : cmdList) {
