@@ -12,7 +12,6 @@ import com.bernardomg.tabletop.dice.interpreter.DiceInterpreter;
 import com.bernardomg.tabletop.dice.interpreter.DiceRoller;
 import com.bernardomg.tabletop.dice.notation.DiceNotationExpression;
 import com.bernardomg.tabletop.dice.parser.DefaultDiceParser;
-import com.bernardomg.tabletop.dice.parser.DiceParser;
 
 import de.btobastian.sdcf4j.Command;
 
@@ -26,16 +25,14 @@ public class PolyCommand implements StandardCommand {
             usage 		= "!p [times]d[size] example: 4d12 for a twelve sided die rolled four times")
     public String onRoll(DiscordApi api, Message message) {
         List<String> args = getArgs(message);
-        DiceNotationExpression result = parser.parse(String.join("", args));
-        RollHistory history = roller.transform(result);
-
         User author = message.getUserAuthor().get();
-        if(history.getRollResults().iterator().hasNext()) {
+        try {
+            DiceNotationExpression result = parser.parse(String.join("", args));
+            RollHistory history = roller.transform(result);
             return String.format("%s: `%d` = %s", author.getMentionTag(), history.getTotalRoll(), history.toString());
-        } else {
+        } catch (Exception e) {
             return String.format("%s: Unable to parse.", author.getMentionTag());
         }
-
     }
 
 }
