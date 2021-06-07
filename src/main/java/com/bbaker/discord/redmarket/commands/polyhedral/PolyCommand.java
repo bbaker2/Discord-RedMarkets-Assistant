@@ -1,5 +1,7 @@
 package com.bbaker.discord.redmarket.commands.polyhedral;
 
+import static java.lang.String.*;
+
 import java.util.List;
 
 import org.javacord.api.DiscordApi;
@@ -17,8 +19,11 @@ import de.btobastian.sdcf4j.Command;
 
 public class PolyCommand implements StandardCommand {
 
-    DefaultDiceParser parser = new DefaultDiceParser();
-    DiceInterpreter<RollHistory> roller = new DiceRoller();
+    public static final String RESULT_TEMPLATE      = "%s: `%d` = %s";
+    public static final String BAD_INPUT_TEMPLATE   = "%s: Unable to parse.";
+
+    private DefaultDiceParser parser = new DefaultDiceParser();
+    private DiceInterpreter<RollHistory> roller = new DiceRoller();
 
     @Command(aliases 	= {"!p", "!poly", "!polyhedral"},
             description = "A generic dice roller",
@@ -29,9 +34,9 @@ public class PolyCommand implements StandardCommand {
         try {
             DiceNotationExpression result = parser.parse(String.join("", args));
             RollHistory history = roller.transform(result);
-            return String.format("%s: `%d` = %s", author.getMentionTag(), history.getTotalRoll(), history.toString());
+            return format(RESULT_TEMPLATE, author.getMentionTag(), history.getTotalRoll(), history.toString());
         } catch (Exception e) {
-            return String.format("%s: Unable to parse.", author.getMentionTag());
+            return format(BAD_INPUT_TEMPLATE, author.getMentionTag());
         }
     }
 
