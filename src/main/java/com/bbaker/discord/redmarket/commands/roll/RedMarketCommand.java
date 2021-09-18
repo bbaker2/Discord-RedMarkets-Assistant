@@ -26,6 +26,33 @@ import de.btobastian.sdcf4j.CommandHandler;
         @OptionDef(ModOption.class)
     }
 )
+@CommandDef(
+    name = "attack",
+    description = "Determines hit/miss & damage. (Success == damage)",
+    options = {
+        @OptionDef(RedOption.class),
+        @OptionDef(BlackOption.class),
+        @OptionDef(ModOption.class)
+    }
+)
+@CommandDef(
+    name = "defend",
+    description = "Determines hit/miss & damage. (Failure == damage)",
+    options = {
+        @OptionDef(RedOption.class),
+        @OptionDef(BlackOption.class),
+        @OptionDef(ModOption.class)
+    }
+)
+@CommandDef(
+    name = "damange",
+    description = "Determines how much damage goes where. No modifiers.",
+    options = {
+        @OptionDef(RedOption.class),
+        @OptionDef(BlackOption.class),
+        @OptionDef(ModOption.class)
+    }
+)
 public class RedMarketCommand implements StandardCommand {
     private static final String CRIT = "Crit";
     private static final String SUCCESS = "Success";
@@ -164,13 +191,16 @@ public class RedMarketCommand implements StandardCommand {
     }
 
     private String checkedDamage(DiscordApi api, Message message, Boolean dmgOnSuccess) {
-        Table table;
         try {
-            table = parseTable(message);
+            Table table = parseTable(message);
+            return checkDamange(api, table, dmgOnSuccess);
         }catch (BadFormatException e) {
             return e.getMessage();
         }
 
+    }
+
+    private String checkDamange(DiscordApi api, Table table, boolean dmgOnSuccess) {
         String crit = table.isCrit() ? CRIT : "";
         String success = table.isSuccess() ? SUCCESS : FAIL;
 
