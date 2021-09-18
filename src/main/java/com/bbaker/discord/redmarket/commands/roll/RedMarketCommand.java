@@ -26,6 +26,33 @@ import de.btobastian.sdcf4j.CommandHandler;
         @OptionDef(ModOption.class)
     }
 )
+@CommandDef(
+    name = "attack",
+    description = "Determines hit/miss & damage. (Success == damage)",
+    options = {
+        @OptionDef(RedOption.class),
+        @OptionDef(BlackOption.class),
+        @OptionDef(ModOption.class)
+    }
+)
+@CommandDef(
+    name = "defend",
+    description = "Determines hit/miss & damage. (Failure == damage)",
+    options = {
+        @OptionDef(RedOption.class),
+        @OptionDef(BlackOption.class),
+        @OptionDef(ModOption.class)
+    }
+)
+@CommandDef(
+    name = "damange",
+    description = "Determines how much damage goes where. No modifiers.",
+    options = {
+        @OptionDef(RedOption.class),
+        @OptionDef(BlackOption.class),
+        @OptionDef(ModOption.class)
+    }
+)
 public class RedMarketCommand implements StandardCommand {
     private static final String CRIT = "Crit";
     private static final String SUCCESS = "Success";
@@ -59,32 +86,47 @@ public class RedMarketCommand implements StandardCommand {
             @SlashOption("red") Integer red,
             @SlashOption("black") Integer black,
             @SlashOption("mod") Integer mod) {
-        Table table = new Table(0);
-        String displayMod = "";
         try {
-            if(red != null) table.setRed(red);
-            if(black != null) table.setBlack(black);
-            if(mod != null) {
-                table.setMod(mod);
-                displayMod = mod >= 0 ? "+" + mod : "" + mod;
-            }
+            Table table = parseTable(red, black, mod);
+            return showTableResult(table, mod != null, api).toString();
         } catch  (BadFormatException e) {
             return e.getMessage();
         }
 
-        String crit, net;
-        if(table.isCrit()) {
-            crit = CRIT + " ";
-            net = "";
-        } else {
-            crit = "";
-            net = "Net: " + table.getNet();
+    }
+
+    private StringBuilder showTableResult(Table table, boolean includeMod, DiscordApi api) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(table.getResults(api));
+
+        if(includeMod) {
+            sb.append(" ");
+            if(table.getMod() >= 0) {
+                sb.append("+");
+            }
+            sb.append(table.getMod());
         }
-        String success = table.isSuccess() ? SUCCESS : FAIL;
 
-        return String.format("%s %s `%s%s` %s", table.getResults(api), displayMod, crit, success, net);
+        sb.append(" `");
+        if(table.isCrit()) {
+            sb.append(CRIT);
+            sb.append(" ");
+        }
 
+        if(table.isSuccess()) {
+            sb.append(SUCCESS);
+        } else {
+            sb.append(FAIL);
+        }
 
+        sb.append("`");
+
+        if(!table.isCrit()) {
+            sb.append(" Net: ").append(table.getNet());
+        }
+
+        return sb;
     }
 
     @Command(aliases = {"!a", "!attack"}, description = "Determines hit/miss & damage. (Success == damage)", usage = "!attack [+n|-n]")
@@ -152,6 +194,65 @@ public class RedMarketCommand implements StandardCommand {
 
     }
 
+    @Slash( command = "attack" )
+    public String onAttack(
+            @SlashMeta DiscordApi api,
+            @SlashOption("red") Integer red,
+            @SlashOption("black") Integer black,
+            @SlashOption("mod") Integer mod) {
+        try {
+            Table table = parseTable(red, black, mod);
+            StringBuilder sb = showTableResult(table, mod != null, api);
+            if(table.isSuccess()) {
+                sb.append(
+                    generateDamage(table.getBlack(), table.getRed(), table.isCrit())
+                );
+            }
+            return sb.toString();
+        } catch  (BadFormatException e) {
+            return e.getMessage();
+        }
+
+    }
+
+    @Slash( command = "defend" )
+    public String onDefend(
+            @SlashMeta DiscordApi api,
+            @SlashOption("red") Integer red,
+            @SlashOption("black") Integer black,
+            @SlashOption("mod") Integer mod) {
+        try {
+            Table table = parseTable(red, black, mod);
+            StringBuilder sb = showTableResult(table, mod != null, api);
+            if(!table.isSuccess()) {
+                sb.append(
+                    generateDamage(table.getBlack(), table.getRed(), table.isCrit())
+                );
+            }
+            return sb.toString();
+        } catch  (BadFormatException e) {
+            return e.getMessage();
+        }
+    }
+
+    @Slash( command = "damange" )
+    public String onDamange(
+            @SlashMeta DiscordApi api,
+            @SlashOption("red") Integer red,
+            @SlashOption("black") Integer black,
+            @SlashOption("mod") Integer mod) {
+        try {
+            Table table = parseTable(red, black, mod);
+            StringBuilder sb = showTableResult(table, mod != null, api);
+            sb.append(
+                generateDamage(table.getBlack(), table.getRed(), table.isCrit())
+            );
+            return sb.toString();
+        } catch  (BadFormatException e) {
+            return e.getMessage();
+        }
+    }
+
     private Table parseTable(Message message) throws BadFormatException {
         DiceRoller dr = new DiceRoller();
         Iterator<String> tokens = getArgs(message).iterator();
@@ -163,14 +264,25 @@ public class RedMarketCommand implements StandardCommand {
         return dr.getTable();
     }
 
+    private Table parseTable(Integer red, Integer black, Integer mod) throws BadFormatException {
+        Table table = new Table(0);
+        if(red != null) table.setRed(red);
+        if(black != null) table.setBlack(black);
+        if(mod != null) table.setMod(mod);
+        return table;
+    }
+
     private String checkedDamage(DiscordApi api, Message message, Boolean dmgOnSuccess) {
-        Table table;
         try {
-            table = parseTable(message);
+            Table table = parseTable(message);
+            return checkDamange(api, table, dmgOnSuccess);
         }catch (BadFormatException e) {
             return e.getMessage();
         }
 
+    }
+
+    private String checkDamange(DiscordApi api, Table table, boolean dmgOnSuccess) {
         String crit = table.isCrit() ? CRIT : "";
         String success = table.isSuccess() ? SUCCESS : FAIL;
 
