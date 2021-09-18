@@ -8,10 +8,24 @@ import org.javacord.api.entity.user.User;
 
 import com.bbaker.discord.redmarket.commands.StandardCommand;
 import com.bbaker.discord.redmarket.exceptions.BadFormatException;
+import com.bbaker.slashcord.handler.annotation.Slash;
+import com.bbaker.slashcord.handler.annotation.SlashMeta;
+import com.bbaker.slashcord.handler.annotation.SlashOption;
+import com.bbaker.slashcord.structure.annotation.CommandDef;
+import com.bbaker.slashcord.structure.annotation.OptionDef;
 
 import de.btobastian.sdcf4j.Command;
 import de.btobastian.sdcf4j.CommandHandler;
 
+@CommandDef(
+    name = "roll",
+    description = "Roll 2d10, finds the difference, and applys any (optional) modifiers",
+    options = {
+        @OptionDef(RedOption.class),
+        @OptionDef(BlackOption.class),
+        @OptionDef(ModOption.class)
+    }
+)
 public class RedMarketCommand implements StandardCommand {
     private static final String CRIT = "Crit";
     private static final String SUCCESS = "Success";
@@ -23,7 +37,7 @@ public class RedMarketCommand implements StandardCommand {
         this.commandHandler = commandHandler;
     }
 
-    @Command(aliases = {"!r", "!roll"}, description = "Roll 2d10, finds the difference, and applys any (optional) modifiers", usage = "!roll [+n|-n]")
+    @Command(aliases = {"!r", "!roll"}, description = "", usage = "!roll [+n|-n]")
     public String onRoll(DiscordApi api, Message message) {
 
         Table table = null;
@@ -37,6 +51,40 @@ public class RedMarketCommand implements StandardCommand {
         String success = table.isSuccess() ? SUCCESS : FAIL;
         User author = message.getUserAuthor().get();
         return String.format("%s: %s `%s%s` Net: %d", author.getMentionTag(), table.getResults(api), crit, success, table.getNet());
+    }
+
+    @Slash( command = "roll" )
+    public String onRoll(
+            @SlashMeta DiscordApi api,
+            @SlashOption("red") Integer red,
+            @SlashOption("black") Integer black,
+            @SlashOption("mod") Integer mod) {
+        Table table = new Table(0);
+        String displayMod = "";
+        try {
+            if(red != null) table.setRed(red);
+            if(black != null) table.setBlack(black);
+            if(mod != null) {
+                table.setMod(mod);
+                displayMod = mod >= 0 ? "+" + mod : "" + mod;
+            }
+        } catch  (BadFormatException e) {
+            return e.getMessage();
+        }
+
+        String crit, net;
+        if(table.isCrit()) {
+            crit = CRIT + " ";
+            net = "";
+        } else {
+            crit = "";
+            net = "Net: " + table.getNet();
+        }
+        String success = table.isSuccess() ? SUCCESS : FAIL;
+
+        return String.format("%s %s `%s%s` %s", table.getResults(api), displayMod, crit, success, net);
+
+
     }
 
     @Command(aliases = {"!a", "!attack"}, description = "Determines hit/miss & damage. (Success == damage)", usage = "!attack [+n|-n]")

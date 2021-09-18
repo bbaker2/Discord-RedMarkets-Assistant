@@ -23,6 +23,7 @@ import com.bbaker.discord.redmarket.commands.roll.RedMarketCommand;
 import com.bbaker.discord.redmarket.db.DatabaseService;
 import com.bbaker.discord.redmarket.db.DatabaseServiceImpl;
 import com.bbaker.discord.redmarket.exceptions.SetupException;
+import com.bbaker.slashcord.dispatcher.SlashCommandDispatcher;
 
 import de.btobastian.sdcf4j.CommandHandler;
 import de.btobastian.sdcf4j.handler.JavacordHandler;
@@ -64,11 +65,15 @@ public class Launcher {
                 new ChannelCommand(api, props.getProperty("config.category"), new ChannelStorageImpl(dbService)),
                 new PolyCommand()
             );
+            SlashCommandDispatcher dispatcher = new SlashCommandDispatcher(api);
 
             for(StandardCommand sd : cmdList) {
                 sd.startup();
                 ch.registerCommand(sd);
+                dispatcher.queue(sd);
             }
+
+            dispatcher.submit().join().stream().forEach(System.out::println);
         } catch (CancellationException | CompletionException e) {
             logger.error("Ran into issues while connecting to discord", e);
             System.exit(1);
