@@ -45,7 +45,7 @@ import de.btobastian.sdcf4j.CommandHandler;
     }
 )
 @CommandDef(
-    name = "damange",
+    name = "damage",
     description = "Determines how much damage goes where. No modifiers.",
     options = {
         @OptionDef(RedOption.class),
@@ -235,7 +235,7 @@ public class RedMarketCommand implements StandardCommand {
         }
     }
 
-    @Slash( command = "damange" )
+    @Slash( command = "damage" )
     public String onDamange(
             @SlashMeta DiscordApi api,
             @SlashOption("red") Integer red,
