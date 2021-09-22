@@ -32,7 +32,8 @@ public class NegotiationStorageImpl implements NegotiationStorage {
                     "provider       INT             NOT NULL, "+
                     "sway_provider  INT             NOT NULL, "+
                     "sway_client    INT             NOT NULL, "+
-                    "is_secret      BOOLEAN         NOT NULL "+
+                    "is_secret      BOOLEAN         NOT NULL, "+
+                    "phase      	INT         	NOT NULL "+
                 ");"
                 ,TABLE_CHANNEL);
 
@@ -44,7 +45,7 @@ public class NegotiationStorageImpl implements NegotiationStorage {
 
     @Override
     public Optional<Tracker> getTracker(long channelId) {
-        String q = db.query("SELECT CHANNEL_ID, ROUND, TOTAL, CLIENT, PROVIDER, SWAY_PROVIDER, SWAY_CLIENT, IS_SECRET "+
+        String q = db.query("SELECT CHANNEL_ID, ROUND, TOTAL, CLIENT, PROVIDER, SWAY_PROVIDER, SWAY_CLIENT, IS_SECRET, PHASE "+
                             "FROM %s "+
                             "WHERE CHANNEL_ID = :channelId", TABLE_CHANNEL);
         return db.withHandle(h ->
@@ -63,11 +64,12 @@ public class NegotiationStorageImpl implements NegotiationStorage {
         if(exists) {
             query = db.query("UPDATE %s " +
                         "SET CHANNEL_ID = :channelId, ROUND = :round, TOTAL = :total, CLIENT = :client, PROVIDER = :provider, "+
-                        "SWAY_PROVIDER = :swayProvider, SWAY_CLIENT = :swayClient, IS_SECRET = :isSecret WHERE CHANNEL_ID = :channelId", TABLE_CHANNEL);
+                        "SWAY_PROVIDER = :swayProvider, SWAY_CLIENT = :swayClient, IS_SECRET = :isSecret, PHASE = :phase " +
+                        "WHERE CHANNEL_ID = :channelId", TABLE_CHANNEL);
         } else {
             query = db.query("INSERT INTO %s " +
-                    "(CHANNEL_ID, ROUND, TOTAL, CLIENT, PROVIDER, SWAY_PROVIDER, SWAY_CLIENT, IS_SECRET) " +
-                    "VALUES(:channelId, :round, :total, :client, :provider, :swayProvider, :swayClient, :isSecret)", TABLE_CHANNEL);
+                    "(CHANNEL_ID, ROUND, TOTAL, CLIENT, PROVIDER, SWAY_PROVIDER, SWAY_CLIENT, IS_SECRET, PHASE) " +
+                    "VALUES(:channelId, :round, :total, :client, :provider, :swayProvider, :swayClient, :isSecret, :phase)", TABLE_CHANNEL);
         }
 
         db.useHandle(h ->
@@ -80,6 +82,7 @@ public class NegotiationStorageImpl implements NegotiationStorage {
             .bind("swayProvider",   tracker.getSwayProvider())
             .bind("swayClient",     tracker.getSwayClient())
             .bind("isSecret",       tracker.isSecret())
+            .bind("phase",       	tracker.getPhase().getDbVal())
             .execute()
         );
 

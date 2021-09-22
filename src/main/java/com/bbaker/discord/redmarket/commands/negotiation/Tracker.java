@@ -16,8 +16,15 @@ public class Tracker {
         "As A Favor", "Buyer's Market", "At Value", "Labor", "Hazard Pay", "100% Mark-Up", "Expenses"
     };
 
-    public Tracker(int provider, int client, int rounds, int current, int swayClient, int swayProvider, boolean secret) {
-
+    public Tracker(int provider, int client, int rounds, int current, int swayClient, int swayProvider, boolean secret, Phase phase) {
+        this.provider = provider;
+        this.client = client;
+        this.rounds = rounds;
+        this.current = current;
+        this.swayClient = swayClient;
+        this.swayProvider = swayProvider;
+        this.secret = secret;
+        this.phase = phase;
     }
 
     public Tracker(Table t) {

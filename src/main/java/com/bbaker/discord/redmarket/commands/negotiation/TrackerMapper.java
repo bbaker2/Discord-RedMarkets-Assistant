@@ -17,7 +17,8 @@ public class TrackerMapper implements RowMapper<Tracker> {
             rs.getInt("round"),
             rs.getInt("sway_client"),
             rs.getInt("sway_provider"),
-            rs.getBoolean("is_secret")
+            rs.getBoolean("is_secret"),
+            Phase.valueOf(rs.getInt("phase"))
         );
     }
 

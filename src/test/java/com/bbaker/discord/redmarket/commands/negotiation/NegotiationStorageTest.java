@@ -1,8 +1,9 @@
 package com.bbaker.discord.redmarket.commands.negotiation;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.Optional;
 import java.util.Properties;
@@ -54,8 +55,8 @@ class NegotiationStorageTest {
 
     @Test
     void testStoreTracker() {
-        Tracker expected = new Tracker(1, 2, 3, 4, 5, 6, true);
-        Tracker second = new Tracker(7, 8, 9, 10, 11, 12, false);
+        Tracker expected = new Tracker(1, 2, 3, 4, 5, 6, true, Phase.NEGOTIATION);
+        Tracker second = new Tracker(7, 8, 9, 10, 11, 12, false, Phase.FINISHED);
         storage.storeTracker(111111, expected);
         storage.storeTracker(222222, second); // a diversion insert
 
@@ -70,12 +71,13 @@ class NegotiationStorageTest {
         assertEquals(expected.getCurrentRound(),     actual.getCurrentRound());
         assertEquals(expected.getSwayClient(),       actual.getSwayClient());
         assertEquals(expected.getSwayProvider(),     actual.getSwayProvider());
+        assertEquals(expected.getPhase(),     		 actual.getPhase());
     }
 
     @Test
     void testDoubleUpdate() {
-        Tracker first = new Tracker(1, 2, 3, 4, 5, 6, true);
-        Tracker second = new Tracker(7, 8, 9, 10, 11, 12, false);
+        Tracker first = new Tracker(1, 2, 3, 4, 5, 6, true, Phase.NEGOTIATION);
+        Tracker second = new Tracker(7, 8, 9, 10, 11, 12, false, Phase.CLOSING);
 
         storage.storeTracker(111111,  first);
         storage.storeTracker(111111,  second);
@@ -83,15 +85,13 @@ class NegotiationStorageTest {
         Optional<Tracker> found = storage.getTracker(111111);
         assertThat(found).isPresent();
         Tracker actual = found.get();
-        assertEquals(second.getProviderTrack(),     actual.getProviderTrack());
         assertEquals(second.getProvider(),          actual.getProvider());
         assertEquals(second.getClient(),            actual.getClient());
-        assertEquals(second.getClientTrack(),       actual.getClientTrack());
         assertEquals(second.getTotalRounds(),       actual.getTotalRounds());
         assertEquals(second.getCurrentRound(),      actual.getCurrentRound());
         assertEquals(second.getSwayClient(),        actual.getSwayClient());
         assertEquals(second.getSwayProvider(),      actual.getSwayProvider());
-
+        assertEquals(second.getPhase(),     		actual.getPhase());
     }
 
 }
