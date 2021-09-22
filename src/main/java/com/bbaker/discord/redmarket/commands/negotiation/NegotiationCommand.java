@@ -87,10 +87,7 @@ import com.bbaker.slashcord.structure.annotation.SubCommandDef;
 )
 public class NegotiationCommand implements StandardCommand {
 
-    private static final String CRIT = "`Crit`";
-    private static final String SUCCESS = "`Success`";
-    private static final String FAIL = "`Fail`";
-    private static final String DASH = ":white_square_button:"; //":heavy_minus_sign:";
+    private static final String DASH = ":white_square_button:";
 
     private static final String NL_BLOCK = "\n> ";
     private static final String BLOCK = "> ";
@@ -346,14 +343,23 @@ public class NegotiationCommand implements StandardCommand {
         String[] emojies = new String[] {DASH, DASH, DASH, DASH, DASH, DASH, DASH};
 
         // then truncate specific positions with the client and provider
-        emojies[tracker.getClient()] = getDiceFace("red", tracker.getClient()+1);
-        emojies[tracker.getProvider()] = getDiceFace("black", tracker.getProvider()+1);
+        emojies[tracker.getClient()] = getDiceFace("red", tracker.getSwayClient());
+        emojies[tracker.getProvider()] = getDiceFace("black", tracker.getSwayProvider());
 
         return String.join(" ", emojies);
     }
 
+    private boolean withinRange(int val) {
+        return val >= 0 && val <= 8;
+    }
+
     private String getDiceFace(String color, int face) {
-        String name = String.format("%s_%02d", color, face);
+        String name;
+        if(withinRange(face)) {
+            name = String.format("%s_%02d", color, face);
+        } else {
+            name = color;
+        }
         Collection<KnownCustomEmoji> emojies = api.getCustomEmojisByName(name);
 
         if(emojies.size() > 0) {
