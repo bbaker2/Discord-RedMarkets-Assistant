@@ -264,7 +264,7 @@ public class RedMarketCommand implements StandardCommand {
         return dr.getTable();
     }
 
-    private Table parseTable(Integer red, Integer black, Integer mod) throws BadFormatException {
+    public static Table parseTable(Integer red, Integer black, Integer mod) throws BadFormatException {
         Table table = new Table(0);
         if(red != null) table.setRed(red);
         if(black != null) table.setBlack(black);
