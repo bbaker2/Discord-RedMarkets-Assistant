@@ -1,12 +1,14 @@
 package com.bbaker.discord.redmarket.commands.negotiation;
 
-import static java.lang.Math.*;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 import com.bbaker.discord.redmarket.commands.roll.Table;
 
 public class Tracker {
     private int provider, client, rounds, current;
     private boolean secret;
+    private Phase phase;
 
     private int swayClient, swayProvider;
 
@@ -32,7 +34,7 @@ public class Tracker {
         client = 6;
         current = 1;
 
-        swayClient = 0;
+        swayClient = 1;
         swayProvider = 0;
     }
 
@@ -108,7 +110,7 @@ public class Tracker {
         client = max(client, 1); // the client cannot be less than position 1
 
         current++;
-        swayClient = 0;
+        swayClient = 1;
         swayProvider = 0;
 
     }
@@ -116,6 +118,14 @@ public class Tracker {
     public void close(int finalPrice) {
         provider = finalPrice;
         client = finalPrice;
+    }
+
+    public Phase getPhase() {
+        return phase;
+    }
+
+    public void setPhase(Phase phase) {
+        this.phase = phase;
     }
 
 
