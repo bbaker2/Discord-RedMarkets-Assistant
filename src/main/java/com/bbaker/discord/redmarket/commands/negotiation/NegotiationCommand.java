@@ -374,11 +374,11 @@ public class NegotiationCommand implements StandardCommand {
     private String printNextStep(Phase phase) {
         switch (phase) {
         case FINISHED:
-            return "Negotations are over. `/negotation start` to being a new tracker.";
+            return "Negotations are finished. `/negotation start` to being a new tracker.";
         case CLOSING:
-            return "Negotations are over. `/negotation close` to perform a closing Leadership check.";
+            return "Negotations are closing. `/negotation close` to perform a closing Leadership check.";
         case UNDERCUT:
-            return "Negotations are over. `/negotation close` to perform a undercut CHA check (if needed)";
+            return "Negotations are closed. `/negotation close` to perform a undercut CHA check (if needed)";
         case NEGOTIATION:
             return "Negotations are still under way. `/negotation sway` or `/negotation next`";
         }
@@ -389,20 +389,36 @@ public class NegotiationCommand implements StandardCommand {
 
     private String appendStatus(Tracker tracker) {
         String status;
-        // If we are done....
-        if(tracker.getPhase() != NEGOTIATION) {
-            status = String.format("Finished all %d round(s). Provider: `%s`; Client: `%s`",
-                    tracker.getTotalRounds(),
-                    tracker.getProviderTrack(),
-                    tracker.getClientTrack());
-        // otherwise print the in-progress status
-        } else {
+        switch(tracker.getPhase()) {
+        case NEGOTIATION:
             String round = tracker.isSecret() ? "[SECRET]" : String.valueOf(tracker.getTotalRounds());
             status = String.format("Round %d of %s. Provider: `%s`; Client: `%s`",
                     tracker.getCurrentRound(),
                     round,
                     tracker.getProviderTrack(),
                     tracker.getClientTrack());
+            break;
+        case CLOSING:
+            status = String.format("Finished all %d round(s). Provider: `%s`; Client: `%s`",
+                    tracker.getTotalRounds(),
+                    tracker.getProviderTrack(),
+                    tracker.getClientTrack());
+            break;
+        case UNDERCUT:
+        case FINISHED:
+            status = String.format("Finished all %d round(s). Final price: `%s`",
+                    tracker.getTotalRounds(),
+                    tracker.getProviderTrack());
+            break;
+        default:
+            status = "Unable to determin round info";
+            break;
+        }
+
+        // If we are done....
+        if(tracker.getPhase() != NEGOTIATION) {
+        // otherwise print the in-progress status
+        } else {
         }
 
         String swayTracker = printSwayTracker(tracker);
