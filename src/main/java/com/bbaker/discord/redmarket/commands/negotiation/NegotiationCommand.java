@@ -1,9 +1,13 @@
 package com.bbaker.discord.redmarket.commands.negotiation;
 
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.*;
-import static com.bbaker.discord.redmarket.commands.roll.RedMarketCommand.*;
-import static java.lang.Math.*;
-import static org.javacord.api.interaction.SlashCommandOptionType.*;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.CLOSING;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.FINISHED;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.NEGOTIATION;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.UNDERCUT;
+import static com.bbaker.discord.redmarket.commands.roll.RedMarketCommand.parseTable;
+import static java.lang.Math.max;
+import static org.javacord.api.interaction.SlashCommandOptionType.BOOLEAN;
+import static org.javacord.api.interaction.SlashCommandOptionType.INTEGER;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -171,6 +175,11 @@ public class NegotiationCommand implements StandardCommand {
         Tracker tracker = dbTracker.get();
 
         StringBuilder sb = new StringBuilder(BLOCK);
+        appendStatus(tracker, sb);
+        return sb.toString();
+    }
+
+    private void appendStatus(Tracker tracker, StringBuilder sb) {
         sb.append(appendStatus(tracker));
         sb.append(NL_BLOCK);
         if(tracker.getPhase() == NEGOTIATION) {
@@ -178,7 +187,6 @@ public class NegotiationCommand implements StandardCommand {
             sb.append(NL_BLOCK);
         }
         sb.append(printNextStep(tracker.getPhase()));
-        return sb.toString();
     }
 
     @Slash(command = "negotiate", sub = "sway")
@@ -194,7 +202,9 @@ public class NegotiationCommand implements StandardCommand {
         Tracker tracker = dbTracker.get();
 
         if(tracker.getPhase() != NEGOTIATION) {
-            return status(channel);
+            StringBuilder sb = new StringBuilder(BLOCK);
+            appendStatus(tracker, sb);
+            return sb.toString();
         }
 
         performSway(tracker, provider, client);
@@ -248,6 +258,15 @@ public class NegotiationCommand implements StandardCommand {
         return sb.toString();
     }
 
+    /**
+     * @param red if not null, the red die's face
+     * @param black if not null, the black die's face
+     * @param mod the modifier to apply to the die roll (null = 0)
+     * @param bust if true, will apply bust rules during closing
+     * @param channel the text channel the command was called from
+     * @return
+     * @throws BadFormatException
+     */
     @Slash(command = "negotiate", sub = "close")
     @SlashException(BadFormatException.class)
     public String close(
@@ -262,32 +281,23 @@ public class NegotiationCommand implements StandardCommand {
         }
         Tracker tracker = dbTracker.get();
 
-        Table table = parseTable(red, black, mod);
-
-
+        StringBuilder sb = new StringBuilder(BLOCK);
         if(tracker.getPhase() == FINISHED) {
-            return status(channel);
+            appendStatus(tracker, sb);
+            return sb.toString();
         }
 
-        StringBuilder sb = new StringBuilder(BLOCK);
-        if(tracker.getPhase() == NEGOTIATION) {
-            sb.append("Attempting to end Negotations early with an Intimidation check.");
-            sb.append(NL_BLOCK);
-            sb.append(table.getFullResults(api));
-            sb.append(NL_BLOCK);
-            if(table.isSuccess()) {
-                tracker.setPhase(CLOSING);
-            } else {
-                sb.append("The Client was unphased. Negotations continue.");
-                sb.append(NL_BLOCK);
-                return sb.append(status(channel)).toString();
-            }
+        Table table = parseTable(red, black, mod);
+        bust =  bust != null && bust == true;
 
+        if(tracker.getPhase() == NEGOTIATION) {
+            performIntimidation(tracker, table, sb);
+            storage.storeTracker(channel.getId(), tracker);
+            return sb.toString();
         }
 
         if(tracker.getPhase() == CLOSING) {
             // apply leadership role
-            bust =  bust != null && bust == true;
             performClosing(bust, tracker, table, sb);
             // transition to undercut
             tracker.setPhase(UNDERCUT);
@@ -296,10 +306,7 @@ public class NegotiationCommand implements StandardCommand {
             tracker.setPhase(FINISHED);
         }
 
-
         sb.append(NL_BLOCK);
-
-
         sb.append("Final price: ").append("`").append(tracker.getProviderTrack()).append("`");
         sb.append(NL_BLOCK);
         sb.append(printSwayTracker(tracker));
@@ -308,8 +315,23 @@ public class NegotiationCommand implements StandardCommand {
             sb.append(NL_BLOCK);
             sb.append(printNextStep(tracker.getPhase()));
         }
-
+        storage.storeTracker(channel.getId(), tracker);
         return sb.toString();
+    }
+
+    private void performIntimidation(Tracker tracker, Table table, StringBuilder sb) {
+        sb.append("Attempting to end Negotations early with an Intimidation check.");
+        sb.append(NL_BLOCK);
+        sb.append(table.getFullResults(api));
+        sb.append(NL_BLOCK);
+        if(table.isSuccess()) {
+            tracker.setPhase(CLOSING);
+            sb.append("Negoations end early");
+        } else {
+            sb.append("The Client was unphased. Negotations continue.");
+        }
+        sb.append(NL_BLOCK);
+        appendStatus(tracker, sb);
     }
 
     private void performUndercut(Tracker tracker, Table table, StringBuilder sb) {
@@ -328,22 +350,24 @@ public class NegotiationCommand implements StandardCommand {
     }
 
     private void performClosing(Boolean bust, Tracker tracker, Table table, StringBuilder sb) {
+        int client = tracker.getClient();
+
         // check if we need bust rules AND
         // there 1 or more spaces between the client and provider
         if(tracker.getClient() - tracker.getProvider() > 1 && bust) {
-            sb.append("Bust rules invoked. The Client accepts The Provider's price AS IS");
-            tracker.close(tracker.getClient());
+            sb.append("Bust rules invoked: ");
+            client = tracker.getProvider()+1; // move the client down to meet the provider
+        }
+
+        sb.append("Performing final `Leadership` check");
+        sb.append(NL_BLOCK);
+        sb.append(table.getFullResults(api));
+        if(table.isSuccess()){
+            // the provider moves into the client's space
+            tracker.close(client);
         } else {
-            sb.append("Performing final `Leadership` check");
-            sb.append(NL_BLOCK);
-            sb.append(table.getFullResults(api));
-            if(table.isSuccess()){
-                // the provider moves into the client's space
-                tracker.close(tracker.getClient());
-            } else {
-                // the client moves into the provider's space
-                tracker.close(tracker.getProvider());
-            }
+            // the client moves into the provider's space
+            tracker.close(tracker.getProvider());
         }
     }
 

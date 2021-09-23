@@ -1,6 +1,10 @@
 package redmarket.commands.negotiation;
 
 import static com.bbaker.discord.redmarket.commands.negotiation.NegotiationCommand.BEGIN_NEW_TRACKER;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.CLOSING;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.FINISHED;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.NEGOTIATION;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.UNDERCUT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -308,6 +312,146 @@ class NegotiationCommandTest extends CommonMocks {
         assertEquals(6, 				tracker.getClient(), 		"Confirm the actual client was not moved");
         assertEquals(false, 			tracker.isSecret(),			"Make sure we didn't somehow flip the secret flag");
 
+    }
+
+    @Test
+    public void testCloseWithoutTracker() throws BadFormatException {
+        // run
+        String reply = cmd.close(null, null, null, null, CHANNEL);
+
+        // validate
+        assertEquals(BEGIN_NEW_TRACKER, reply);
+    }
+
+    @Test
+    public void testClosedFinished() throws BadFormatException {
+        // setup
+        Tracker startingTracking = new Tracker(3, 4, 2, 2, 0, 0, true, FINISHED);
+        db.put(CHANNEL_ID, startingTracking);
+        // run
+        cmd.close(null, null, null, null, CHANNEL);
+
+        // validate
+        verify(storage, never().description("Skip any database updates")).storeTracker(anyLong(), any());
+
+        verify(storage, never()).storeTracker(eq(CHANNEL_ID), any());
+        Tracker tracker = db.values().iterator().next();
+        assertEquals(FINISHED, tracker.getPhase(), "Make sure the phase remains unchanged");
+
+    }
+
+    @Test
+    public void testCloseEarlyFail() throws BadFormatException {
+        // setup
+        Tracker startingTracking = new Tracker(3, 4, 4, 1, 0, 0, true, NEGOTIATION);
+        db.put(CHANNEL_ID, startingTracking);
+
+        // run
+        cmd.close(8, 1, null, null, CHANNEL);
+
+        // verify
+        verify(storage).storeTracker(eq(CHANNEL_ID), any());
+        Tracker tracker = db.values().iterator().next();
+        assertEquals(NEGOTIATION, 	tracker.getPhase(), 	"Make sure the phase remains unchanged during failed early close");
+        assertEquals(3, 			tracker.getProvider(), 	"The provider should not move");
+        assertEquals(4, 			tracker.getClient(), 	"The client should not move");
+
+    }
+
+    @Test
+    public void testCloseEarlyPass() throws BadFormatException {
+        // setup
+        Tracker startingTracking = new Tracker(3, 4, 4, 1, 0, 0, true, NEGOTIATION);
+        db.put(CHANNEL_ID, startingTracking);
+
+        // run
+        cmd.close(1, 8, null, null, CHANNEL);
+
+        // verify
+        verify(storage).storeTracker(eq(CHANNEL_ID), any());
+        Tracker tracker = db.values().iterator().next();
+        assertEquals(CLOSING, 		tracker.getPhase(), 	"Transition to the Closing phase upon successful early closing");
+        assertEquals(3, 			tracker.getProvider(), 	"The provider should not move");
+        assertEquals(4, 			tracker.getClient(), 	"The client should not move");
+
+    }
+
+    @CsvSource({
+        "false, 4",
+        ", 		4",
+        "true,	2",
+    })
+    @ParameterizedTest
+    public void testCloseLeadershipPass(Boolean bust, int expectedTrack) throws BadFormatException {
+        // setup
+        Tracker startingTracking = new Tracker(1, 4, 4, 1, 0, 0, true, CLOSING);
+        db.put(CHANNEL_ID, startingTracking);
+
+        // run
+        cmd.close(1, 8, null, bust, CHANNEL);
+
+        // verify
+        verify(storage).storeTracker(eq(CHANNEL_ID), any());
+        Tracker tracker = db.values().iterator().next();
+        assertEquals(UNDERCUT, 		tracker.getPhase(), 	"Transition to the Undercut phase");
+        assertEquals(expectedTrack,	tracker.getProvider(), 	"The provider should move up to the client");
+        assertEquals(expectedTrack, tracker.getClient(), 	"Make sure the client moved down correctly");
+    }
+
+    @CsvSource({
+        "false, 1",
+        ", 		1",
+        "true,	1",
+    })
+    @ParameterizedTest
+    public void testCloseLeadershipFail(Boolean bust, int expectedTrack) throws BadFormatException {
+        // setup
+        Tracker startingTracking = new Tracker(1, 4, 4, 1, 0, 0, true, CLOSING);
+        db.put(CHANNEL_ID, startingTracking);
+
+        // run
+        cmd.close(8, 1, null, bust, CHANNEL);
+
+        // verify
+        verify(storage).storeTracker(eq(CHANNEL_ID), any());
+        Tracker tracker = db.values().iterator().next();
+        assertEquals(UNDERCUT, 		tracker.getPhase(), 	"Transition to the Undercut phase");
+        assertEquals(expectedTrack, tracker.getProvider(), 	"The provider should not move during failed leadership checks");
+        assertEquals(expectedTrack, tracker.getClient(), 	"The client should not move");
+    }
+
+    @Test
+    public void testUnderCutSuccess() throws BadFormatException {
+        // setup
+        Tracker startingTracking = new Tracker(3, 3, 4, 4, 0, 0, true, UNDERCUT);
+        db.put(CHANNEL_ID, startingTracking);
+
+        // run
+        cmd.close(1, 8, null, null, CHANNEL);
+
+        // verify
+        verify(storage).storeTracker(eq(CHANNEL_ID), any());
+        Tracker tracker = db.values().iterator().next();
+        assertEquals(FINISHED, 		tracker.getPhase(), 	"Transition to the Finished phase");
+        assertEquals(3, 			tracker.getProvider(), 	"The provider should not have moved");
+        assertEquals(3, 			tracker.getClient(), 	"The client should not move");
+    }
+
+    @Test
+    public void testUnderCutFail() throws BadFormatException {
+        // setup
+        Tracker startingTracking = new Tracker(3, 3, 4, 4, 0, 0, true, UNDERCUT);
+        db.put(CHANNEL_ID, startingTracking);
+
+        // run
+        cmd.close(8, 1, null, null, CHANNEL);
+
+        // verify
+        verify(storage).storeTracker(eq(CHANNEL_ID), any());
+        Tracker tracker = db.values().iterator().next();
+        assertEquals(FINISHED, 		tracker.getPhase(), 	"Transition to the Finished phase");
+        assertEquals(2, 			tracker.getProvider(), 	"The provider should move down one");
+        assertEquals(2, 			tracker.getClient(), 	"The client should move down one");
     }
 
 }
