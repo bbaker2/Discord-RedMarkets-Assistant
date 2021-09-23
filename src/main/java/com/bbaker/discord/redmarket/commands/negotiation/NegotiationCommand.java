@@ -374,13 +374,13 @@ public class NegotiationCommand implements StandardCommand {
     private String printNextStep(Phase phase) {
         switch (phase) {
         case FINISHED:
-            return "Negotations are finished. `/negotation start` to being a new tracker.";
+            return "Negotations are finished. `/negotiate start` to being a new tracker.";
         case CLOSING:
-            return "Negotations are closing. `/negotation close` to perform a closing Leadership check.";
+            return "Negotations are closing. `/negotiate close` to perform a closing Leadership check.";
         case UNDERCUT:
-            return "Negotations are closed. `/negotation close` to perform a undercut CHA check (if needed)";
+            return "Negotations are closed. `/negotiate close` to perform a undercut CHA check (if needed)";
         case NEGOTIATION:
-            return "Negotations are still under way. `/negotation sway` or `/negotation next`";
+            return "Negotations are still under way. `/negotiate sway` or `/negotiate next`";
         }
 
         return "";
