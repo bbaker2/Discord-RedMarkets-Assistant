@@ -1,13 +1,9 @@
 package com.bbaker.discord.redmarket.commands.negotiation;
 
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.CLOSING;
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.FINISHED;
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.NEGOTIATION;
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.UNDERCUT;
-import static com.bbaker.discord.redmarket.commands.roll.RedMarketCommand.parseTable;
-import static java.lang.Math.max;
-import static org.javacord.api.interaction.SlashCommandOptionType.BOOLEAN;
-import static org.javacord.api.interaction.SlashCommandOptionType.INTEGER;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.*;
+import static com.bbaker.discord.redmarket.commands.roll.RedMarketCommand.*;
+import static java.lang.Math.*;
+import static org.javacord.api.interaction.SlashCommandOptionType.*;
 
 import java.util.Collection;
 import java.util.Optional;
