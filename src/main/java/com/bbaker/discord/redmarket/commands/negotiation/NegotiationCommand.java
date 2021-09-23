@@ -334,21 +334,6 @@ public class NegotiationCommand implements StandardCommand {
         appendStatus(tracker, sb);
     }
 
-    private void performUndercut(Tracker tracker, Table table, StringBuilder sb) {
-        sb.append("Performing final `CHA` check");
-        sb.append(NL_BLOCK);
-        sb.append(table.getFullResults(api));
-        sb.append(NL_BLOCK);
-        // apply CHA role
-        if(table.isSuccess()) {
-            sb.append("The Client aggress that the clients are worth the closing price.");
-        } else {
-            sb.append("Another Provider undercuts you. The Client pushes down the price.");
-            int closing = max(0, tracker.getClient() - 1); // reduce the client by 1 to a minimum of 0
-            tracker.close(closing);
-        }
-    }
-
     private void performClosing(Boolean bust, Tracker tracker, Table table, StringBuilder sb) {
         int client = tracker.getClient();
 
@@ -368,6 +353,21 @@ public class NegotiationCommand implements StandardCommand {
         } else {
             // the client moves into the provider's space
             tracker.close(tracker.getProvider());
+        }
+    }
+
+    private void performUndercut(Tracker tracker, Table table, StringBuilder sb) {
+        sb.append("Performing final `CHA` check");
+        sb.append(NL_BLOCK);
+        sb.append(table.getFullResults(api));
+        sb.append(NL_BLOCK);
+        // apply CHA role
+        if(table.isSuccess()) {
+            sb.append("The Client aggress that the clients are worth the closing price.");
+        } else {
+            sb.append("Another Provider undercuts you. The Client pushes down the price.");
+            int closing = max(0, tracker.getClient() - 1); // reduce the client by 1 to a minimum of 0
+            tracker.close(closing);
         }
     }
 
