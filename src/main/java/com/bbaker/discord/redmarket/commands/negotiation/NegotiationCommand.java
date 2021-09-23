@@ -197,11 +197,19 @@ public class NegotiationCommand implements StandardCommand {
             return status(channel);
         }
 
-        if(provider != null) tracker.swayProvider(provider);
-        if(client != null) tracker.swayClient(client);
+        performSway(tracker, provider, client);
 
         storage.storeTracker(channel.getId(), tracker);
         return printSway(tracker);
+    }
+
+    private void performSway(Tracker tracker, Integer provider, Integer client) {
+        if(tracker.getPhase() != NEGOTIATION) {
+            return; // short circuit
+        }
+
+        if(provider != null) tracker.swayProvider(provider);
+        if(client != null) tracker.swayClient(client);
     }
 
     private String printSway(Tracker tracker) {
@@ -222,7 +230,7 @@ public class NegotiationCommand implements StandardCommand {
         }
         Tracker tracker = dbTracker.get();
 
-        sway(provider, client, channel); // apply sway, but ignore the response;
+        performSway(tracker, provider, client); // apply sway
 
         if(tracker.getPhase() == NEGOTIATION && tracker.getCurrentRound() <= tracker.getTotalRounds()) {
             tracker.next();
