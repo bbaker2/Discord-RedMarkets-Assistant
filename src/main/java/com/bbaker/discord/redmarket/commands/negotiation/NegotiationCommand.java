@@ -98,7 +98,7 @@ import com.bbaker.slashcord.structure.annotation.SubCommandDef;
 )
 public class NegotiationCommand implements StandardCommand {
 
-    private static final String BEGIN_NEW_TRACKER = "`/negotation start` to begin a new tracker.";
+    public static final String BEGIN_NEW_TRACKER = "`/negotation start` to begin a new tracker.";
 
     private static final String DASH = ":white_square_button:";
 

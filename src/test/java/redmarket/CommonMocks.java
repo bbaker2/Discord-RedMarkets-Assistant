@@ -1,7 +1,6 @@
 package redmarket;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,8 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.javacord.api.entity.Nameable;
-import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -24,7 +23,7 @@ public class CommonMocks {
     public static final long USER_ID = 11111111;
     public static final User USER = mock(User.class);
 
-    public static final Channel CHANNEL = mock(Channel.class);
+    public static final TextChannel CHANNEL = mock(TextChannel.class);
     public static final long CHANNEL_ID = 22222222;
 
     public static final Server SERVER = mock(Server.class);
