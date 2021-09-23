@@ -10,6 +10,7 @@ import static org.javacord.api.interaction.SlashCommandOptionType.BOOLEAN;
 import static org.javacord.api.interaction.SlashCommandOptionType.INTEGER;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.channel.TextChannel;
@@ -66,7 +67,21 @@ import com.bbaker.slashcord.structure.annotation.SubCommandDef;
         ),
         @CommandDef(
             name = "next",
-            description = "Apply sways and move to the next round"
+            description = "Apply sways and move to the next round",
+            options = {
+                @OptionDef(
+                    name = "provider",
+                    description = "The amount of sway you wish to add to the Provider, before progressing to the next round.",
+                    type = INTEGER,
+                    required = false
+                ),
+                @OptionDef(
+                    name = "client",
+                    description = "The amount of sway you wish to add to the Client, before progressing to the next round.",
+                    type = INTEGER,
+                    required = false
+                )
+            }
         ),
         @CommandDef(
             name = "close",
@@ -87,6 +102,8 @@ import com.bbaker.slashcord.structure.annotation.SubCommandDef;
 )
 public class NegotiationCommand implements StandardCommand {
 
+    private static final String BEGIN_NEW_TRACKER = "`/negotation start` to begin a new tracker.";
+
     private static final String DASH = ":white_square_button:";
 
     private static final String NL_BLOCK = "\n> ";
@@ -94,6 +111,11 @@ public class NegotiationCommand implements StandardCommand {
 
     private NegotiationStorage storage;
     private DiscordApi api;
+
+    @Override
+    public void startup() {
+        storage.createTable();
+    }
 
     public NegotiationCommand(DiscordApi api, NegotiationStorage storage) {
         this.api = api;
@@ -146,7 +168,12 @@ public class NegotiationCommand implements StandardCommand {
     @Slash(command = "negotiate", sub = "status")
     @SlashException(BadFormatException.class)
     public String status(@SlashMeta TextChannel channel) {
-        Tracker tracker = storage.getTracker(channel.getId()).get();
+        Optional<Tracker> dbTracker = storage.getTracker(channel.getId());
+        if(!dbTracker.isPresent()) {
+            return BEGIN_NEW_TRACKER;
+        }
+        Tracker tracker = dbTracker.get();
+
         StringBuilder sb = new StringBuilder(BLOCK);
         sb.append(appendStatus(tracker));
         sb.append(NL_BLOCK);
@@ -164,8 +191,11 @@ public class NegotiationCommand implements StandardCommand {
             @SlashOption("provider") Integer provider,
             @SlashOption("client") Integer client,
             @SlashMeta TextChannel channel) throws BadFormatException {
-        long channelId = channel.getId();
-        Tracker tracker = storage.getTracker(channelId).get();
+        Optional<Tracker> dbTracker = storage.getTracker(channel.getId());
+        if(!dbTracker.isPresent()) {
+            return BEGIN_NEW_TRACKER;
+        }
+        Tracker tracker = dbTracker.get();
 
         if(tracker.getPhase() != NEGOTIATION) {
             return status(channel);
@@ -174,7 +204,7 @@ public class NegotiationCommand implements StandardCommand {
         if(provider != null) tracker.swayProvider(provider);
         if(client != null) tracker.swayClient(client);
 
-        storage.storeTracker(channelId, tracker);
+        storage.storeTracker(channel.getId(), tracker);
         return printSway(tracker);
     }
 
@@ -186,15 +216,24 @@ public class NegotiationCommand implements StandardCommand {
     }
 
     @Slash(command = "negotiate", sub = "next")
-    public String nextRound(@SlashMeta TextChannel channel) {
-        long channelId = channel.getId();
-        Tracker tracker = storage.getTracker(channelId).get();
+    public String nextRound(
+            @SlashOption("provider") Integer provider,
+            @SlashOption("client") Integer client,
+            @SlashMeta TextChannel channel) throws BadFormatException {
+        Optional<Tracker> dbTracker = storage.getTracker(channel.getId());
+        if(!dbTracker.isPresent()) {
+            return BEGIN_NEW_TRACKER;
+        }
+        Tracker tracker = dbTracker.get();
+
+        sway(provider, client, channel); // apply sway, but ignore the response;
+
         if(tracker.getPhase() == NEGOTIATION && tracker.getCurrentRound() <= tracker.getTotalRounds()) {
             tracker.next();
             if(tracker.getCurrentRound() >= tracker.getTotalRounds()) {
                 tracker.setPhase(Phase.CLOSING);
             }
-            storage.storeTracker(channelId, tracker);
+            storage.storeTracker(channel.getId(), tracker);
         }
 
         StringBuilder sb = new StringBuilder(BLOCK);
@@ -213,7 +252,11 @@ public class NegotiationCommand implements StandardCommand {
          @SlashOption("mod") Integer mod,
          @SlashOption("bust") Boolean bust,
          TextChannel channel) throws BadFormatException {
-        Tracker tracker = storage.getTracker(channel.getId()).get();
+        Optional<Tracker> dbTracker = storage.getTracker(channel.getId());
+        if(!dbTracker.isPresent()) {
+            return BEGIN_NEW_TRACKER;
+        }
+        Tracker tracker = dbTracker.get();
 
         Table table = parseTable(red, black, mod);
 
