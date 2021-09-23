@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>bbaker.discord.redmarket</groupId>
   <artifactId>drma</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.4.0-SNAPSHOT</version>
 
   <build>
     <finalName>discord_redmarket</finalName>
