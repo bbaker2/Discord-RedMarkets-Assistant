@@ -39,6 +39,7 @@ public class Tracker {
         }
 
         rounds = min(5, rounds); // there cannot be more than 5 rounds
+        rounds = max(1, rounds); // there cannot be less than 1 round
         client = 6;
         current = 1;
 

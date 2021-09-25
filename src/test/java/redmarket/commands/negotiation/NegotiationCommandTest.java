@@ -85,6 +85,8 @@ class NegotiationCommandTest extends CommonMocks {
         "7, 8, 0,  4",
         "7, 8, 1,  5",
         "7, 8, 3,  5",
+        "2, 2, -1, 1",
+        "2, 2, -8, 1",
     })
     @ParameterizedTest
     public void testStartRounds(int red, int black, int mod, int expectedRounds) throws BadFormatException {
