@@ -37,6 +37,8 @@ public class Tracker {
             secret = true;
             rounds = (int) (Math.random() * 5) + 1; // simulates a 1d10 / 2
         }
+
+        rounds = min(5, rounds); // there cannot be more than 5 rounds
         client = 6;
         current = 1;
 

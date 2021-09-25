@@ -75,6 +75,33 @@ class NegotiationCommandTest extends CommonMocks {
 
     }
 
+    @CsvSource({
+        "1, 2, 0,  1",
+        "1, 2, 1,  2",
+        "1, 8, -6, 1",
+        "1, 2, 6,  4",
+        "1, 2, 7,  5",
+        "1, 2, 20, 5",
+        "7, 8, 0,  4",
+        "7, 8, 1,  5",
+        "7, 8, 3,  5",
+    })
+    @ParameterizedTest
+    public void testStartRounds(int red, int black, int mod, int expectedRounds) throws BadFormatException {
+
+        // run
+        cmd.start(red, black, mod, CHANNEL);
+
+        // validate
+        verify(storage).storeTracker(eq(CHANNEL_ID), any());
+        assertEquals(1, db.size());
+
+        Tracker tracker = db.values().iterator().next();
+        assertEquals(NEGOTIATION, tracker.getPhase());
+        assertEquals(expectedRounds, tracker.getTotalRounds());
+
+    }
+
     @Test
     public void testStartCritSuccess() throws BadFormatException {
         // run
