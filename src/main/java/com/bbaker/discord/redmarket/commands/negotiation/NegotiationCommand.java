@@ -243,8 +243,9 @@ public class NegotiationCommand implements StandardCommand {
         performSway(tracker, provider, client); // apply sway
 
         if(tracker.getPhase() == NEGOTIATION && tracker.getCurrentRound() <= tracker.getTotalRounds()) {
+            boolean willClose = tracker.getCurrentRound() == tracker.getTotalRounds();
             tracker.next();
-            if(tracker.getCurrentRound() >= tracker.getTotalRounds()) {
+            if(willClose) {
                 tracker.setPhase(Phase.CLOSING);
             }
             storage.storeTracker(channel.getId(), tracker);

@@ -1,7 +1,6 @@
 package com.bbaker.discord.redmarket.commands.negotiation;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import static java.lang.Math.*;
 
 import com.bbaker.discord.redmarket.commands.roll.Table;
 
@@ -116,7 +115,7 @@ public class Tracker {
         provider = max(0, provider); // the provider cannot be less than position 0
         client = max(client, 1); // the client cannot be less than position 1
 
-        current++;
+        current = min(rounds, current+1); // do not let the current round exceed the total
         swayClient = 1;
         swayProvider = 0;
 

@@ -1,20 +1,10 @@
 package redmarket.commands.negotiation;
 
-import static com.bbaker.discord.redmarket.commands.negotiation.NegotiationCommand.BEGIN_NEW_TRACKER;
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.CLOSING;
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.FINISHED;
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.NEGOTIATION;
-import static com.bbaker.discord.redmarket.commands.negotiation.Phase.UNDERCUT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static com.bbaker.discord.redmarket.commands.negotiation.NegotiationCommand.*;
+import static com.bbaker.discord.redmarket.commands.negotiation.Phase.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -155,7 +145,7 @@ class NegotiationCommandTest extends CommonMocks {
 
     @CsvSource({
         "1,	NEGOTIATION, 2, NEGOTIATION,	1",
-        "3,	NEGOTIATION, 4, CLOSING,		1",
+        "4,	NEGOTIATION, 4, CLOSING,		1",
         "4,	CLOSING, 	 4, CLOSING,		0",
         "4,	UNDERCUT, 	 4, UNDERCUT,		0",
         "4,	FINISHED, 	 4, FINISHED,		0",
@@ -184,6 +174,80 @@ class NegotiationCommandTest extends CommonMocks {
         assertEquals(0, 			tracker.getProvider(), 		"Regardless of phase, the provider should not move since there was no sway");
         assertEquals(6, 			tracker.getClient(), 		"Regardless of phase, the client should not move since there was no sway");
         assertEquals(false, 		tracker.isSecret(),			"Make sure we didn't somehow flip the secret flag");
+
+    }
+
+    @Test
+    public void testOneRound() throws BadFormatException {
+        // run & setup
+        cmd.start(1, 2, 1, CHANNEL); // black:1, red:1, with a modifier of 1. barely a success
+
+        Tracker tracker;
+
+        // verify starting round
+        verify(storage, times(1)).storeTracker(eq(CHANNEL_ID), any());
+        tracker = db.get(CHANNEL_ID);
+        assertEquals(NEGOTIATION, tracker.getPhase());
+        assertEquals(1, tracker.getTotalRounds(),   "There should be one round");
+        assertEquals(1, tracker.getCurrentRound(),  "We should be on round one");
+
+        // run
+        cmd.nextRound(null, null, CHANNEL);
+
+        // verify the only round
+        verify(storage, times(2)).storeTracker(eq(CHANNEL_ID), any());
+        tracker = db.get(CHANNEL_ID);
+        assertEquals(CLOSING, tracker.getPhase(),   "We should have transitioned to the closign phase");
+        assertEquals(1, tracker.getCurrentRound(),  "We still be on round one, but closed");
+
+    }
+
+    @Test
+    public void testNextFourRounds() throws BadFormatException {
+        // setup
+        Tracker startingTracker = new Tracker(
+                0,6,            // the provider and the client start at opposite ends
+                4,1,            // there are a max of 4 rounds, starting on round 1
+                0,0,            // both sides do not have any sway
+                false,          // not a secret
+                NEGOTIATION);
+        db.put(CHANNEL_ID, startingTracker);
+        Tracker tracker;
+
+        // run and validate turn 1
+        cmd.nextRound(null, null, CHANNEL);
+        verify(storage, times(1).description("Round 1")).storeTracker(eq(CHANNEL_ID), any());
+        tracker = db.get(CHANNEL_ID);
+        assertEquals(2,             tracker.getCurrentRound(),  "Confirm we moved to the correct round");
+        assertEquals(NEGOTIATION,   tracker.getPhase(),   "The phase should not transition");
+
+        // run and validate turn 2
+        cmd.nextRound(null, null, CHANNEL);
+        verify(storage, times(2).description("Round 2")).storeTracker(eq(CHANNEL_ID), any());
+        tracker = db.get(CHANNEL_ID);
+        assertEquals(3,             tracker.getCurrentRound(),  "Confirm we moved to the correct round");
+        assertEquals(NEGOTIATION,   tracker.getPhase(),         "The phase should not transition");
+
+        // run and validate turn 3
+        cmd.nextRound(null, null, CHANNEL);
+        verify(storage, times(3).description("Round 3")).storeTracker(eq(CHANNEL_ID), any());
+        tracker = db.get(CHANNEL_ID);
+        assertEquals(4,             tracker.getCurrentRound(),  "Confirm we moved to the correct round");
+        assertEquals(NEGOTIATION,   tracker.getPhase(),         "The phase should not transition");
+
+        // run and validate turn 4
+        cmd.nextRound(null, null, CHANNEL);
+        verify(storage, times(4).description("Round 4")).storeTracker(eq(CHANNEL_ID), any());
+        tracker = db.get(CHANNEL_ID);
+        assertEquals(4,             tracker.getCurrentRound(),  "The round should not have moved up, while the phase changed");
+        assertEquals(CLOSING,       tracker.getPhase(),         "The phase should not transition");
+
+        // run and validate invalid turn 5
+        cmd.nextRound(null, null, CHANNEL);
+        verify(storage, times(4).description("Still Round 4. No db changes")).storeTracker(eq(CHANNEL_ID), any());
+        tracker = db.get(CHANNEL_ID);
+        assertEquals(4,             tracker.getCurrentRound(),  "The current round should still be on round 4");
+        assertEquals(CLOSING,       tracker.getPhase(),         "The phase should not transition, and should still be closed");
 
     }
 
