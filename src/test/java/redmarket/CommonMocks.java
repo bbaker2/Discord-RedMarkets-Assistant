@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.javacord.api.entity.Nameable;
+import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
@@ -42,7 +43,7 @@ public class CommonMocks {
 
     public static Message genMsg(String content, Nameable...mentioned) {
         List<User> taggedUsers = new ArrayList<User>();
-        List<ServerTextChannel> taggedChannels = new ArrayList<ServerTextChannel>();
+        List<ServerChannel> taggedChannels = new ArrayList<>();
 
         for(Nameable de : mentioned) {
             if(de instanceof ServerTextChannel) {
@@ -55,7 +56,7 @@ public class CommonMocks {
        return genMsg(content, taggedUsers, taggedChannels);
     }
 
-    public static Message genMsg(String content, List<User> taggedUsers, List<ServerTextChannel> taggedChannels) {
+    public static Message genMsg(String content, List<User> taggedUsers, List<ServerChannel> taggedChannels) {
         Message msg = mock(Message.class, Mockito.RETURNS_DEEP_STUBS);
 
         when(msg.getAuthor().getId()).thenReturn(USER_ID);

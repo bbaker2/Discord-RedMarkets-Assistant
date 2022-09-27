@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.javacord.api.AccountType;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 
@@ -53,7 +52,7 @@ public class Launcher {
             System.exit(1);
         }
 
-        DiscordApiBuilder dab = new DiscordApiBuilder().setAccountType(AccountType.BOT).setToken(props.getProperty("auth.token"));
+        DiscordApiBuilder dab = new DiscordApiBuilder().setToken(props.getProperty("auth.token"));
         try {
             DatabaseService dbService = new DatabaseServiceImpl(props);
             DiscordApi api = dab.login().join();

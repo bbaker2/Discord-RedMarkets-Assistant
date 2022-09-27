@@ -7,7 +7,7 @@ import static com.bbaker.discord.redmarket.commands.negotiation.Phase.UNDERCUT;
 import static com.bbaker.discord.redmarket.commands.roll.RedMarketCommand.parseTable;
 import static java.lang.Math.max;
 import static org.javacord.api.interaction.SlashCommandOptionType.BOOLEAN;
-import static org.javacord.api.interaction.SlashCommandOptionType.INTEGER;
+import static org.javacord.api.interaction.SlashCommandOptionType.LONG;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -54,13 +54,13 @@ import com.bbaker.slashcord.structure.annotation.SubCommandDef;
                 @OptionDef(
                     name = "provider",
                     description = "The amount of sway you wish to add to the Provider",
-                    type = INTEGER,
+                    type = LONG,
                     required = false
                 ),
                 @OptionDef(
                     name = "client",
                     description = "The amount of sway you wish to add to the Client",
-                    type = INTEGER,
+                    type = LONG,
                     required = false
                 )
             }
@@ -72,13 +72,13 @@ import com.bbaker.slashcord.structure.annotation.SubCommandDef;
                 @OptionDef(
                     name = "provider",
                     description = "The amount of sway you wish to add to the Provider, before progressing to the next round.",
-                    type = INTEGER,
+                    type = LONG,
                     required = false
                 ),
                 @OptionDef(
                     name = "client",
                     description = "The amount of sway you wish to add to the Client, before progressing to the next round.",
-                    type = INTEGER,
+                    type = LONG,
                     required = false
                 )
             }

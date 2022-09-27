@@ -13,8 +13,9 @@ import java.util.stream.Collectors;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.channel.ChannelCategory;
+import org.javacord.api.entity.channel.RegularServerChannel;
+import org.javacord.api.entity.channel.RegularServerChannelUpdater;
 import org.javacord.api.entity.channel.ServerChannel;
-import org.javacord.api.entity.channel.ServerChannelUpdater;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.permission.PermissionType;
@@ -55,7 +56,7 @@ public class ChannelCommand implements StandardCommand {
         playerPerms = new PermissionsBuilder()
                 .setAllowed(
                         PermissionType.READ_MESSAGE_HISTORY,
-                        PermissionType.READ_MESSAGES,
+                        PermissionType.VIEW_CHANNEL,
                         PermissionType.ADD_REACTIONS,
                         PermissionType.ATTACH_FILE,
                         PermissionType.SEND_MESSAGES,
@@ -140,7 +141,7 @@ public class ChannelCommand implements StandardCommand {
         }
     }
 
-    private String addUser(List<String> args, User creator, List<ServerTextChannel> mentioned, List<User> mentionedUsers, Server server) throws CommandException {
+    private String addUser(List<String> args, User creator, List<ServerChannel> mentioned, List<User> mentionedUsers, Server server) throws CommandException {
         // Find the channels
         if(args.isEmpty()) {
             return "Missing channel name. Try `!channel add <chanel_name> <user_name>...`";
@@ -148,7 +149,7 @@ public class ChannelCommand implements StandardCommand {
 
         String channel = pop(args);
 
-        List<ServerChannel> toUpdate = retrieveChannels(channel, creator, mentioned);
+        List<RegularServerChannel> toUpdate = retrieveChannels(channel, creator, mentioned);
 
         if(args.isEmpty()) {
             return "Missing users to add. Try `!channel add <chanel_name> <user_name>...`";
@@ -157,8 +158,8 @@ public class ChannelCommand implements StandardCommand {
         // Add the users
         List<User> toAdd = retrieveUsers(args, mentionedUsers, server);
 
-        for(ServerChannel sc : toUpdate) {
-            ServerChannelUpdater scu = sc.createUpdater();
+        for(RegularServerChannel sc : toUpdate) {
+            RegularServerChannelUpdater<?> scu = sc.createUpdater();
             for(User u : toAdd) {
                 scu.addPermissionOverwrite(u, playerPerms);
             }
@@ -169,7 +170,7 @@ public class ChannelCommand implements StandardCommand {
         return format(MSG_USR_ADDED, String.join(DELIMITER, userNames), channel);
     }
 
-    private String removeUser(List<String> args, User creator, List<ServerTextChannel> mentioned, List<User> mentionedUsers, Server server) throws CommandException {
+    private String removeUser(List<String> args, User creator, List<ServerChannel> mentioned, List<User> mentionedUsers, Server server) throws CommandException {
         // Find the channels
         if(args.isEmpty()) {
             return "Missing channel name. Try `!channel remove <chanel_name> <user_name>...`";
@@ -177,7 +178,7 @@ public class ChannelCommand implements StandardCommand {
 
         String channel = pop(args);
 
-        List<ServerChannel> toUpdate = retrieveChannels(channel, creator, mentioned);
+        List<RegularServerChannel> toUpdate = retrieveChannels(channel, creator, mentioned);
 
         if(toUpdate.isEmpty()) {
             return format(MSG_CHANNEL_NOT_FOUND, channel);
@@ -190,8 +191,8 @@ public class ChannelCommand implements StandardCommand {
         // Add the users
         List<User> toAdd = retrieveUsers(args, mentionedUsers, server);
 
-        for(ServerChannel sc : toUpdate) {
-            ServerChannelUpdater scu = sc.createUpdater();
+        for(RegularServerChannel sc : toUpdate) {
+            RegularServerChannelUpdater<?> scu = sc.createUpdater();
             for(User u : toAdd) {
                 scu.removePermissionOverwrite(u);
             }
@@ -227,20 +228,20 @@ public class ChannelCommand implements StandardCommand {
     }
 
 
-    private String deleteChannel(List<String> args, User owner, List<ServerTextChannel> mentioned) throws CommandException {
+    private String deleteChannel(List<String> args, User owner, List<ServerChannel> mentioned) throws CommandException {
         if(args.isEmpty()) {
             return "Missing channel name. Try `!channel remove <chanel_name>`";
         }
 
         String channel = pop(args);
 
-        List<ServerChannel> toDelete = retrieveChannels(channel, owner, mentioned);
+        List<RegularServerChannel> toDelete = retrieveChannels(channel, owner, mentioned);
 
         // if no messages were generated, it is safe to assume we were unsuccessful at finding a match
         if(toDelete.isEmpty()) {
             return format(MSG_CHANNEL_NOT_FOUND, channel);
         } else {
-            for(ServerChannel sc : toDelete) {
+            for(RegularServerChannel sc : toDelete) {
                 database.unregisterChannel(sc.getId()); // remove the owner from the database
                 sc.delete(); // actually delete the channel
             }
@@ -248,26 +249,27 @@ public class ChannelCommand implements StandardCommand {
         }
     }
 
-    private List<ServerChannel> retrieveChannels(String channelName, User owner, List<ServerTextChannel> mentioned) throws CommandException {
+    private List<RegularServerChannel> retrieveChannels(String channelName, User owner, List<ServerChannel> mentioned) throws CommandException {
         ChannelCategory category = getCategory();
 
         // If someone used a #mentioned tag, attempt to convert it into this string name instead
-        for(ServerTextChannel stc : mentioned) {
-            if(stc.getMentionTag().equalsIgnoreCase(channelName)) {
-                channelName = stc.getName();
+        for(ServerChannel sc : mentioned) {
+            Optional<ServerTextChannel> stc = sc.asServerTextChannel();
+            if(stc.isPresent() && stc.get().getMentionTag().equalsIgnoreCase(channelName)) {
+                channelName = sc.getName();
                 break;
             }
         }
 
         // Only search in the list of channels that are in the approved category
-        List<ServerChannel> channelList = category.getChannels();
+        List<RegularServerChannel> channelList = category.getChannels();
 
         // Loop over all the channels and see if:
         // 1.) The channels has an owner
         // 2.) If the owner is the one trying to retrieve it
         // Otherwise, throw an error
-        List<ServerChannel> found = new ArrayList<ServerChannel>();
-        for(ServerChannel sc : channelList) {
+        List<RegularServerChannel> found = new ArrayList<RegularServerChannel>();
+        for(RegularServerChannel sc : channelList) {
             if(sc.getName().equalsIgnoreCase(channelName)) {
                 Optional<Long> realOwner = database.getOwner(sc.getId());
                 if(realOwner.isPresent()) {
@@ -332,7 +334,7 @@ public class ChannelCommand implements StandardCommand {
         return format(MSG_CHANNEL_CREATED, channel);
     }
 
-    private String printName(List<ServerChannel> channels) {
+    private String printName(List<RegularServerChannel> channels) {
         // We assume there is at least one entry. So I am not going to bother with length validation
         return channels.get(0).getName();
     }

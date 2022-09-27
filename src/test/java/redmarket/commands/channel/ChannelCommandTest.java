@@ -14,8 +14,9 @@ import java.util.function.Consumer;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.channel.ChannelCategory;
+import org.javacord.api.entity.channel.RegularServerChannel;
+import org.javacord.api.entity.channel.RegularServerChannelBuilder;
 import org.javacord.api.entity.channel.ServerChannel;
-import org.javacord.api.entity.channel.ServerChannelBuilder;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.ServerTextChannelBuilder;
 import org.javacord.api.entity.channel.ServerTextChannelUpdater;
@@ -153,7 +154,7 @@ class ChannelCommandTest extends CommonMocks {
         // Create 10 channels (5 voice, 5 text). Put our expected channel somewhere in the middle
         // hello-world should have Ids 5 & 6
         String[] dummyNames = new String[] {"foo", "bar", "fizz", "bar"};
-        List<ServerChannel> foundChannels = new ArrayList<ServerChannel>();
+        List<RegularServerChannel> foundChannels = new ArrayList<>();
         long id = 1;
         for(String name : dummyNames) {
             ServerTextChannel stc = mock(ServerTextChannel.class);
@@ -358,11 +359,11 @@ class ChannelCommandTest extends CommonMocks {
         verify(svcu, never()).removePermissionOverwrite(any());
     }
 
-    private <T extends ServerChannel> void detailedMockAndVerify(ServerChannelBuilder scb,  String name, long channelId, T serverChannel, CompletableFuture<T> future) {
+    private <T extends ServerChannel> void detailedMockAndVerify(RegularServerChannelBuilder scb,  String name, long channelId, T serverChannel, CompletableFuture<T> future) {
 
         when(scb.setName(name)).thenReturn(scb);
-        when(scb.addPermissionOverwrite(argThat(r -> r != null && r.getId() == everyone.getId()), any())).thenReturn(scb);
-        when(scb.addPermissionOverwrite(argThat(u -> u != null && u.getId() == USER_ID), any())).thenReturn(scb);
+        when(scb.addPermissionOverwrite(argThat(r -> r != null && ((Role)r).getId() == everyone.getId()), any())).thenReturn(scb);
+        when(scb.addPermissionOverwrite(argThat(u -> u != null && ((User)u).getId() == USER_ID), any())).thenReturn(scb);
         when(serverChannel.getId()).thenReturn(channelId);
 
         when(future.thenAccept(any())).thenAnswer(i -> {
